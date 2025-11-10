@@ -19,7 +19,7 @@ from docx.enum.table import WD_TABLE_ALIGNMENT, WD_ALIGN_VERTICAL
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 
-app = Flask(__name__, template_folder="template")
+app = Flask(__name__, template_folder="templates")
 CORS(app)
 
 
@@ -970,6 +970,7 @@ def index():
 if __name__ == '__main__':
     # Flask ejecutará desde render_app/
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=True)
+
 
 
 
