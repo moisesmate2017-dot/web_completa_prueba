@@ -906,16 +906,37 @@ def generar_informe():
         return jsonify({"error": "Error interno del servidor", "detail": str(e)}), 500
 
 
-# Página simple para probar manualmente
-@app.route("/")
+# --- Ruta principal: sirve la interfaz principal desde /templates/pagina.html ---
+@app.route('/')
 def index():
+    return render_template('pagina.html')
+
+# --- Endpoint de generación del informe ---
+@app.route('/generar', methods=['POST'])
+def generar_informe():
     try:
-        return render_template("pagina.html")
-    except Exception:
-        return "<h3>Servidor Flask funcionando. Envia POST (FormData payload+fotos) a /generar</h3>"
+        # Recibir los datos del formulario (FormData: payload + fotos)
+        payload_json = request.form.get('payload')
+        files = request.files
+
+        print("📩 Datos recibidos del formulario:")
+        print(f"- Payload JSON: {len(payload_json) if payload_json else 0} bytes")
+        print(f"- Fotos cargadas: {len(files)} archivos")
+
+        # 🧠 Aquí va la lógica de tu backend (la parte que genera el Word)
+        # Ejemplo:
+        # docx_path = generar_docx(payload_json, files)
+
+        # return send_file(docx_path, as_attachment=True)
+
+        return jsonify({"status": "ok", "msg": "Simulación de generación correcta"})
+    except Exception as e:
+        print("❌ Error durante la generación:", e)
+        return jsonify({"error": str(e)}), 500
 
 
-if __name__ == "__main__":
-    # Para Render.com respeta el puerto de entorno; local usa 5000
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+if _name_ == '_main_':
+    # Flask ejecutará desde render_app/
+    app.run(debug=True)
+
 
