@@ -797,19 +797,23 @@ def build_dfs_from_json(payload):
     return df_info, df_tanques, df_accesorios, df_red, df_equipos, df_obs
 
 
-# Final: recibe FormData (payload + images) o JSON y devuelve .docx
-# ==========================================
+# ======================================================
+# Final: recibe FormData (payload + imágenes) o JSON y devuelve .docx
+# ======================================================
 @app.route("/generar", methods=["POST"])
 def generar_informe():
     try:
-        # Acepta JSON o FormData con archivos
+        # Acepta tanto JSON puro como multipart/form-data con imágenes
         content_type = request.content_type or ""
         if content_type.startswith("multipart/form-data"):
             payload_raw = request.form.get("payload")
             try:
                 payload = json.loads(payload_raw) if payload_raw else {}
             except Exception as e:
-                return jsonify({"error": "Payload JSON inválido en form-data", "detail": str(e)}), 400
+                return jsonify({
+                    "error": "Payload JSON inválido en form-data",
+                    "detail": str(e)
+                }), 400
             imagenes = request.files
         else:
             payload = request.get_json(silent=True)
@@ -818,7 +822,9 @@ def generar_informe():
         if not payload:
             return jsonify({"error": "No JSON recibido o body vacío"}), 400
 
-        # Validaciones mínimas (igual que antes)
+        # ===============================
+        # Validaciones mínimas
+        # ===============================
         general = payload.get("general", {}) or {}
         tanques = payload.get("tanques", []) or []
 
@@ -837,31 +843,46 @@ def generar_informe():
         ]
         missing = [k for k in required_general if not (general.get(k) or "").strip()]
         if missing:
-            return (
-                jsonify({"error": "Faltan campos obligatorios en 'general'", "missing": missing}),
-                400,
-            )
+            return jsonify({
+                "error": "Faltan campos obligatorios en 'general'",
+                "missing": missing
+            }), 400
 
         if len(tanques) == 0:
             return jsonify({"error": "Se requiere al menos un tanque en 'tanques'"}), 400
 
-        # Validación accesoriosTanque: si hay alguna propiedad rellena, todas las columnas de ese accesorio deben estar
+        # ===============================
+        # Validar accesorios de tanques
+        # ===============================
         accesorios_tanque = payload.get("accesoriosTanque", {}) or {}
         for tk, accs in accesorios_tanque.items():
             for acc_name, fields in (accs or {}).items():
-                if any((fields.get(f) or "").strip() for f in ["Marca", "Código", "Serie", "Mes/Año de fabricación"]):
-                    missingf = [f for f in ["Marca", "Código", "Serie", "Mes/Año de fabricación"] if not (fields.get(f) or "").strip()]
+                if any((fields.get(f) or "").strip()
+                       for f in ["Marca", "Código", "Serie", "Mes/Año de fabricación"]):
+                    missingf = [
+                        f for f in ["Marca", "Código", "Serie", "Mes/Año de fabricación"]
+                        if not (fields.get(f) or "").strip()
+                    ]
                     if missingf:
-                        return jsonify({"error": f"En accesoriosTanque.{tk}.{acc_name} faltan campos: {missingf}"}), 400
+                        return jsonify({
+                            "error": f"En accesoriosTanque.{tk}.{acc_name} faltan campos: {missingf}"
+                        }), 400
 
-        # Validación accesoriosRed
+        # ===============================
+        # Validar accesorios en red
+        # ===============================
         accesorios_red = payload.get("accesoriosRed", []) or []
         for i, r in enumerate(accesorios_red):
-            if any((r.get(k) or "").strip() for k in ["Marca", "Serie", "Código", "Mes/Año de fabricación"]):
+            if any((r.get(k) or "").strip()
+                   for k in ["Marca", "Serie", "Código", "Mes/Año de fabricación"]):
                 if not (r.get("Tipo") or "").strip():
-                    return jsonify({"error": f"AccesoriosRed[{i}] tiene campos pero falta 'Tipo'"}), 400
+                    return jsonify({
+                        "error": f"AccesoriosRed[{i}] tiene campos pero falta 'Tipo'"
+                    }), 400
 
-        # Validación equipos
+        # ===============================
+        # Validar equipos
+        # ===============================
         equipos = payload.get("equipos", []) or []
         estructura_equipos = {
             "vaporizador": ["Equipo", "Marca", "Tipo", "Serie", "Año de fabricación", "Capacidad"],
@@ -880,63 +901,73 @@ def generar_informe():
                 required_cols = estructura_equipos[tipo]
                 missing_eq = [c for c in required_cols if not (eq.get(c) or "").strip()]
                 if missing_eq:
-                    return jsonify({"error": f"Equipo[{i}] de tipo '{tipo}' faltan campos: {missing_eq}"}), 400
+                    return jsonify({
+                        "error": f"Equipo[{i}] de tipo '{tipo}' faltan campos: {missing_eq}"
+                    }), 400
 
+        # ===============================
         # Construir DataFrames
+        # ===============================
         df_info, df_tanques, df_accesorios, df_red, df_equipos, df_obs = build_dfs_from_json(payload)
 
-        # Generar docx (ahora con imagenes)
-        ruta = generar_docx_desde_dfs(df_info, df_tanques, df_accesorios, df_red, df_equipos, df_obs, imagenes)
+        # ===============================
+        # Generar DOCX (con imágenes)
+        # ===============================
+        ruta = generar_docx_desde_dfs(
+            df_info,
+            df_tanques,
+            df_accesorios,
+            df_red,
+            df_equipos,
+            df_obs
+        )
 
-        # Enviar archivo y limpiar
+        # ===============================
+        # Enviar archivo al cliente
+        # ===============================
         try:
-            response = send_file(ruta, as_attachment=True, download_name=os.path.basename(ruta))
+            response = send_file(
+                ruta,
+                as_attachment=True,
+                download_name=os.path.basename(ruta)
+            )
         except TypeError:
             response = send_file(ruta, as_attachment=True)
-        # eliminar archivo temporal de forma segura
+
+        # Borrar el archivo temporal tras enviar
         try:
             os.remove(ruta)
         except Exception:
             pass
+
         return response
 
     except Exception as e:
         import traceback
         traceback.print_exc()
-        return jsonify({"error": "Error interno del servidor", "detail": str(e)}), 500
+        return jsonify({
+            "error": "Error interno del servidor",
+            "detail": str(e)
+        }), 500
 
 
-# --- Ruta principal: sirve la interfaz principal desde /templates/pagina.html ---
+# ======================================================
+# Ruta principal: carga la interfaz HTML (templates/pagina.html)
+# ======================================================
 @app.route('/')
 def index():
-    return render_template('pagina.html')
-
-# --- Endpoint de generación del informe ---
-@app.route('/generar', methods=['POST'])
-def generar_informe():
     try:
-        # Recibir los datos del formulario (FormData: payload + fotos)
-        payload_json = request.form.get('payload')
-        files = request.files
-
-        print("📩 Datos recibidos del formulario:")
-        print(f"- Payload JSON: {len(payload_json) if payload_json else 0} bytes")
-        print(f"- Fotos cargadas: {len(files)} archivos")
-
-        # 🧠 Aquí va la lógica de tu backend (la parte que genera el Word)
-        # Ejemplo:
-        # docx_path = generar_docx(payload_json, files)
-
-        # return send_file(docx_path, as_attachment=True)
-
-        return jsonify({"status": "ok", "msg": "Simulación de generación correcta"})
+        return render_template('pagina.html')
     except Exception as e:
-        print("❌ Error durante la generación:", e)
-        return jsonify({"error": str(e)}), 500
+        return f"<h3>Error al cargar la página: {str(e)}</h3>"
 
 
-if _name_ == '_main_':
+# ======================================================
+# Punto de entrada del servidor
+# ======================================================
+if __name__ == '__main__':
     # Flask ejecutará desde render_app/
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=True)
+
 
 
