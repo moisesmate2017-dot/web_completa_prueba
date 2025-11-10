@@ -1,6 +1,12 @@
+#!/usr/bin/env python3
+# servidor_actualizado.py
+# Versión mejorada de tu servidor: acepta FormData (payload JSON + imágenes)
+# y coloca las imágenes en los subtítulos / recuadros del docx.
+# Requiere: Flask, flask-cors, python-docx, pandas
 
 import os
 import tempfile
+import json
 from datetime import datetime
 from flask import Flask, request, send_file, jsonify, render_template
 from flask_cors import CORS
@@ -34,7 +40,6 @@ def valOrDash(v):
     return v if (v is not None and str(v).strip() != "") else "-"
 
 
-
 # FUNCIONES PARA CREAR DOCX
 def set_cell_style(cell, text, font_size=10, bold=False, align_center=True):
     cell.text = str(text)
@@ -44,9 +49,7 @@ def set_cell_style(cell, text, font_size=10, bold=False, align_center=True):
             run.font.size = Pt(font_size)
             run.bold = bold
         paragraph.alignment = (
-            WD_PARAGRAPH_ALIGNMENT.CENTER
-            if align_center
-            else WD_PARAGRAPH_ALIGNMENT.LEFT
+            WD_PARAGRAPH_ALIGNMENT.CENTER if align_center else WD_PARAGRAPH_ALIGNMENT.LEFT
         )
     cell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
 
@@ -152,10 +155,35 @@ def insertar_recuadro_foto(doc, ancho_cm=15, alto_cm=10):
     tcPr.append(borders)
 
 
+def insertar_imagen_si_existe(doc, clave, imagenes, ancho_cm=15, alto_cm=10):
+    """
+    Inserta la imagen asociada a 'clave' (si viene en request.files).
+    Si no existe, inserta el recuadro de placeholder.
+    Para claves que admiten múltiples recuadros (clave__1, clave__2 ...),
+    la función puede ser llamada varias veces con la misma base.
+    """
+    if not imagenes or clave not in imagenes:
+        # no hay imagen => placeholder
+        insertar_recuadro_foto(doc, ancho_cm, alto_cm)
+        return
+
+    try:
+        f = imagenes[clave]
+        # python-docx acepta file-like objects; flask.FileStorage es compatible
+        ancho_in = ancho_cm / 2.54
+        # Insertar la imagen ajustando ancho, mantener aspect ratio
+        doc.add_picture(f, width=Inches(ancho_in))
+        # opcional: espacio entre imagen y siguiente párrafo
+        doc.add_paragraph("")
+    except Exception as e:
+        print(f"⚠️ Error insertando imagen {clave}: {e}")
+        insertar_recuadro_foto(doc, ancho_cm, alto_cm)
+
+
 # FUNCIÓN CENTRAL DOCX
 # =========================
 def generar_docx_desde_dfs(
-    df_info, df_tanques, df_accesorios, df_red, df_equipos, df_obs
+    df_info, df_tanques, df_accesorios, df_red, df_equipos, df_obs, imagenes=None
 ):
     doc = Document()
 
@@ -462,12 +490,13 @@ def generar_docx_desde_dfs(
 
     # === 8. Evidencia general ===
     add_subtitle(doc, "8. EVIDENCIA FOTOGRÁFICA (del establecimiento)")
-    insertar_recuadro_foto(doc)
+    # clave sugerida: foto_8_1
+    insertar_imagen_si_existe(doc, "foto_8_1", imagenes)
 
     # === 9. Evidencia fotográfica de elementos de la instalación ===
     add_subtitle(doc, "9. Evidencia fotográfica de elementos de la instalación")
 
-    # Preparar bloques para punto 9
+    # Preparar bloques para punto 9 (usamos las mismas listas que antes)
     tanques_for_block = (
         df_tanques.to_dict(orient="records")
         if df_tanques is not None and not df_tanques.empty
@@ -479,59 +508,68 @@ def generar_docx_desde_dfs(
         if df_equipos_local is not None and not df_equipos_local.empty
         else []
     )
-    # accesorios_red_dict ya armado arriba (del punto 5)
-    accesorios_red_for_block = accesorios_red_dict
+    accesorios_red_for_block = accesorios_red_dict if 'accesorios_red_dict' in locals() else {}
 
     bloque_9 = []
     contador = 1
 
     # 9.1 Panorámica general
-    bloque_9.append((f"9.{contador}. FOTO PANORÁMICA DE LA ZONA", True, 1)); contador += 1
+    bloque_9.append((f"9.{contador}. FOTO PANORÁMICA DE LA ZONA", True, 1, "foto_9_panoramica")); contador += 1
 
     # Placas por tanque
     for i, t in enumerate(tanques_for_block):
         serie = valOrDash(t.get("N° de serie") or t.get("serie"))
-        bloque_9.append((f"9.{contador}. PLACA DE TANQUE {i+1} DE SERIE: {serie}", True, 1)); contador += 1
+        bloque_9.append((f"9.{contador}. PLACA DE TANQUE {i+1} DE SERIE: {serie}", True, 1, f"foto_9_placa_tank_{i+1}")); contador += 1
 
     # Panorámica de alrededores por tanque (ejemplo con 4 recuadros)
     for i, t in enumerate(tanques_for_block):
         serie = valOrDash(t.get("N° de serie") or t.get("serie"))
-        bloque_9.append((f"9.{contador}. FOTO PANORÁMICA DE ALREDEDORES DE TANQUE {i+1} DE SERIE: {serie}", True, 4)); contador += 1
+        bloque_9.append((f"9.{contador}. FOTO PANORÁMICA DE ALREDEDORES DE TANQUE {i+1} DE SERIE: {serie}", True, 4, f"foto_9_panoramica_tank_{i+1}")); contador += 1
 
     # Bloque iterativo según tanques (varios subtítulos por tanque)
     for i, t in enumerate(tanques_for_block):
         serie = valOrDash(t.get("N° de serie") or t.get("serie"))
-        bloque_9.append((f"9.{contador}. FOTO DE BASES DE CONCRETO DE TANQUE {i + 1} DE SERIE: {serie}", True, 1)); contador += 1
-        bloque_9.append((f"9.{contador}. FOTO DE MANÓMETROS 0-60 PSI DE TANQUE {i + 1} DE SERIE: {serie}", True, 1)); contador += 1
-        bloque_9.append((f"9.{contador}. FOTO DE MANÓMETROS 0-300 PSI DE TANQUE {i + 1} DE SERIE: {serie}", True, 1)); contador += 1
-        bloque_9.append((f"9.{contador}. FOTO DE CONEXIÓN DE CHICOTE A LA MULTIVÁLVULA DE TANQUE {i + 1} DE SERIE: {serie}", True, 1)); contador += 1
-        bloque_9.append((f"9.{contador}. STICKERS DEL TANQUE {i + 1} DE SERIE: {serie} Y PINTADO", True, 1)); contador += 1
-        bloque_9.append((f"9.{contador}. FOTO DE LOS 04 ANCLAJES, PERNOS, TORNILLOS DEL TANQUE {i + 1} DE SERIE: {serie}", True, 1)); contador += 1
-        bloque_9.append((f"9.{contador}. FOTO DE VÁLVULA DE LLENADO DE TANQUE {i + 1} DE SERIE: {serie}", True, 1)); contador += 1
-        bloque_9.append((f"9.{contador}. FOTO DE VÁLVULA DE SEGURIDAD DE TANQUE {i + 1} DE SERIE: {serie}", True, 1)); contador += 1
-        bloque_9.append((f"9.{contador}. FOTO DE VÁLVULA DE DRENAJE DE TANQUE {i + 1} DE SERIE: {serie}", True, 1)); contador += 1
-        bloque_9.append((f"9.{contador}. FOTO DE VÁLVULA DE MULTIVÁLVULA DE TANQUE {i + 1} DE SERIE: {serie}", True, 1)); contador += 1
-        bloque_9.append((f"9.{contador}. FOTO DE VÁLVULA DE MEDIDOR DE PORCENTAJE DE TANQUE {i + 1} DE SERIE: {serie}", True, 1)); contador += 1
+        titles = [
+            f"FOTO DE BASES DE CONCRETO DE TANQUE {i + 1} DE SERIE: {serie}",
+            f"FOTO DE MANÓMETROS 0-60 PSI DE TANQUE {i + 1} DE SERIE: {serie}",
+            f"FOTO DE MANÓMETROS 0-300 PSI DE TANQUE {i + 1} DE SERIE: {serie}",
+            f"FOTO DE CONEXIÓN DE CHICOTE A LA MULTIVÁLVULA DE TANQUE {i + 1} DE SERIE: {serie}",
+            f"STICKERS DEL TANQUE {i + 1} DE SERIE: {serie} Y PINTADO",
+            f"FOTO DE LOS 04 ANCLAJES, PERNOS, TORNILLOS DEL TANQUE {i + 1} DE SERIE: {serie}",
+            f"FOTO DE VÁLVULA DE LLENADO DE TANQUE {i + 1} DE SERIE: {serie}",
+            f"FOTO DE VÁLVULA DE SEGURIDAD DE TANQUE {i + 1} DE SERIE: {serie}",
+            f"FOTO DE VÁLVULA DE DRENAJE DE TANQUE {i + 1} DE SERIE: {serie}",
+            f"FOTO DE VÁLVULA DE MULTIVÁLVULA DE TANQUE {i + 1} DE SERIE: {serie}",
+            f"FOTO DE VÁLVULA DE MEDIDOR DE PORCENTAJE DE TANQUE {i + 1} DE SERIE: {serie}",
+        ]
+        for idx_title, ttxt in enumerate(titles):
+            clave = f"foto_9_tank{ i+1 }_{ idx_title+1 }"
+            bloque_9.append((f"9.{contador}. {ttxt}", True, 1, clave)); contador += 1
 
     # Equipos específicos
     for tipo in ["estabilizador", "quemador", "vaporizador", "tablero", "bomba", "dispensador_de_gas", "decantador", "detector"]:
         lista_eq = equipos_instalacion.get(tipo, [])
         if lista_eq:
-            for eq in lista_eq:
+            for idx_eq, eq in enumerate(lista_eq):
                 serie = valOrDash(eq.get("Serie"))
-                bloque_9.append((f"9.{contador}. FOTO DE PLACA DE {tipo.upper()} DE SERIE: {serie}", True, 1)); contador += 1
-                bloque_9.append((f"9.{contador}. FOTO DE {tipo.upper()}", True, 1)); contador += 1
+                clave_placa = f"foto_9_{tipo}_placa_{idx_eq+1}"
+                clave_general = f"foto_9_{tipo}_general_{idx_eq+1}"
+                bloque_9.append((f"9.{contador}. FOTO DE PLACA DE {tipo.upper()} DE SERIE: {serie}", True, 1, clave_placa)); contador += 1
+                bloque_9.append((f"9.{contador}. FOTO DE {tipo.upper()}", True, 1, clave_general)); contador += 1
         else:
-            bloque_9.append((f"9.{contador}. FOTO DE PLACA DE {tipo.upper()} DE SERIE: -", False, 1)); contador += 1
-            bloque_9.append((f"9.{contador}. FOTO DE {tipo.upper()}", False, 1)); contador += 1
+            # cuando no existe, igualmente añadimos entrada pero marcar como no-incluir
+            clave_placa = f"foto_9_{tipo}_placa_1"
+            clave_general = f"foto_9_{tipo}_general_1"
+            bloque_9.append((f"9.{contador}. FOTO DE PLACA DE {tipo.upper()} DE SERIE: -", False, 1, clave_placa)); contador += 1
+            bloque_9.append((f"9.{contador}. FOTO DE {tipo.upper()}", False, 1, clave_general)); contador += 1
 
     # Toma desplazada (llenado_toma_desplazada)
     tiene_toma = bool(accesorios_red_for_block.get("llenado_toma_desplazada"))
-    bloque_9.append((f"9.{contador}. FOTO DEL PUNTO DE TRANSFERENCIA DESPLAZADO", tiene_toma, 1)); contador += 1
-    bloque_9.append((f"9.{contador}. FOTO DE LA CAJA DE LA TOMA DESPLAZADA", tiene_toma, 1)); contador += 1
-    bloque_9.append((f"9.{contador}. FOTO DEL RECORRIDO DESDE TOMA DESPLAZADA HASTA TANQUE", tiene_toma, 1)); contador += 1
+    bloque_9.append((f"9.{contador}. FOTO DEL PUNTO DE TRANSFERENCIA DESPLAZADO", tiene_toma, 1, "foto_9_toma_transferencia")); contador += 1
+    bloque_9.append((f"9.{contador}. FOTO DE LA CAJA DE LA TOMA DESPLAZADA", tiene_toma, 1, "foto_9_toma_caja")); contador += 1
+    bloque_9.append((f"9.{contador}. FOTO DEL RECORRIDO DESDE TOMA DESPLAZADA HASTA TANQUE", tiene_toma, 1, "foto_9_toma_recorrido")); contador += 1
 
-    # Accesorios individuales
+    # Accesorios individuales (mapa)
     mapa = {
         "llenado_toma_desplazada": "VÁLVULA DE LLENADO TOMA DESPLAZADA",
         "retorno_toma_desplazada": "VÁLVULA DE RETORNO TOMA DESPLAZADA",
@@ -541,8 +579,8 @@ def generar_docx_desde_dfs(
         "alivio_hidrostatico": "VÁLVULA DE ALIVIO HIDROSTÁTICO",
         "regulador_primera_etapa": "REGULADOR DE PRIMERA ETAPA",
     }
-    for clave, nombre in mapa.items():
-        lista = accesorios_red_for_block.get(clave, []) if accesorios_red_for_block else []
+    for clave_map, nombre in mapa.items():
+        lista = accesorios_red_for_block.get(clave_map, []) if accesorios_red_for_block else []
         cantidad = max(1, len(lista))
         for idx in range(cantidad):
             if idx < len(lista):
@@ -551,14 +589,15 @@ def generar_docx_desde_dfs(
             else:
                 codigo = "-"
                 existe = False
-            bloque_9.append((f"9.{contador}. FOTO DE {nombre} {idx+1} DE CÓDIGO: {codigo}", existe))
+            clave = f"foto_9_acc_{clave_map}_{idx+1}"
+            bloque_9.append((f"9.{contador}. FOTO DE {nombre} {idx+1} DE CÓDIGO: {codigo}", existe, 1, clave))
             contador += 1
 
     # Zona de medidores
-    bloque_9.append((f"9.{contador}. FOTO DE ZONA MEDIDORES", bool(accesorios_red_for_block.get("zona_medidores")))); contador += 1
+    bloque_9.append((f"9.{contador}. FOTO DE ZONA MEDIDORES", bool(accesorios_red_for_block.get("zona_medidores")), 1, "foto_9_zona_medidores")); contador += 1
 
     # === Subtitulos internos para punto 9 ===
-    def add_foto_con_subtitulo(doc, texto, incluir_imagen=True, num_recuadros=1):
+    def add_foto_con_subtitulo(doc, texto, incluir_imagen=True, num_recuadros=1, clave_base=None):
         p = doc.add_paragraph()
         run = p.add_run(texto)
         run.bold = True
@@ -571,60 +610,49 @@ def generar_docx_desde_dfs(
         p.paragraph_format.left_indent = Inches(0.3)
         p.paragraph_format.keep_with_next = True
         if incluir_imagen:
-            for _ in range(num_recuadros):
-                insertar_recuadro_foto(doc)
+            if clave_base is None:
+                # si no hay clave, insertar un recuadro
+                for _ in range(num_recuadros):
+                    insertar_recuadro_foto(doc)
+            else:
+                # insertar imágenes basadas en clave_base; soporta múltiples recuadros
+                if num_recuadros == 1:
+                    insertar_imagen_si_existe(doc, clave_base, imagenes)
+                else:
+                    # si se requieren N recuadros y las imágenes se nombraron clave__1, clave__2, ...
+                    for n in range(1, num_recuadros + 1):
+                        k = f"{clave_base}__{n}"
+                        insertar_imagen_si_existe(doc, k, imagenes)
         else:
             add_note(doc, "*NO CUENTA CON DICHO ELEMENTO")
 
     def insertar_dos_fotos(doc, bloques):
-        # Inserta dos subtítulos seguidos (cada uno con su recuadro)
-        for texto, incluir in bloques:
-            add_foto_con_subtitulo(doc, texto, incluir_imagen=incluir)
+        # Inserta dos subtítulos seguidos (cada uno con su recuadro/imagen)
+        for texto, incluir, numr, clave in bloques:
+            add_foto_con_subtitulo(doc, texto, incluir_imagen=incluir, num_recuadros=numr, clave_base=clave)
 
-    # === Recorrer bloque_9 con lógica extendida ===
+    # === Recorrer bloque_9 con la nueva lógica ===
     i = 0
     while i < len(bloque_9):
         item = bloque_9[i]
-
-        # Compatibilidad: item puede tener 2 o 3 valores
-        if len(item) == 2:
-            texto, incluir = item
-            num_recuadros = 1
-        else:
-            texto, incluir, num_recuadros = item
-
+        texto, incluir, num_recuadros, clave = item
         if incluir:
-            # Caso especial: N recuadros en un mismo subtítulo
-            if num_recuadros > 1:
-                add_foto_con_subtitulo(doc, texto, incluir_imagen=True, num_recuadros=num_recuadros)
-                doc.add_paragraph()
-                i += 1
-                continue
-
-            # Caso normal: intentar agrupar el siguiente si también es 1 recuadro
-            if i + 1 < len(bloque_9):
+            # agrupar dos seguidos si ambos tienen 1 recuadro y ambos incluirán imagen
+            if num_recuadros == 1 and i + 1 < len(bloque_9):
                 item2 = bloque_9[i + 1]
-                if len(item2) == 2:
-                    texto2, incluir2 = item2
-                    num_recuadros2 = 1
-                else:
-                    texto2, incluir2, num_recuadros2 = item2
-
-                if incluir2 and num_recuadros == 1 and num_recuadros2 == 1:
-                    insertar_dos_fotos(doc, [(texto, True), (texto2, True)])
+                texto2, incluir2, num_recuadros2, clave2 = item2
+                if incluir2 and num_recuadros2 == 1:
+                    insertar_dos_fotos(doc, [(texto, incluir, num_recuadros, clave), (texto2, incluir2, num_recuadros2, clave2)])
                     i += 2
                     continue
-
-            # Sino, un recuadro normal
-            add_foto_con_subtitulo(doc, texto, incluir_imagen=True)
+            add_foto_con_subtitulo(doc, texto, incluir_imagen=incluir, num_recuadros=num_recuadros, clave_base=clave)
             doc.add_paragraph()
             i += 1
             continue
-
-        # Caso: no incluir imagen → agrupar todos seguidos
+        # si no incluir → anotar como nota (agrupando secuencias)
         while i < len(bloque_9) and not bloque_9[i][1]:
-            texto_no, _ = bloque_9[i][0], bloque_9[i][1]
-            add_foto_con_subtitulo(doc, texto_no, incluir_imagen=False)
+            texto_no, _, _, clave_no = bloque_9[i]
+            add_foto_con_subtitulo(doc, texto_no, incluir_imagen=False, clave_base=clave_no)
             i += 1
 
     # === 10. EVIDENCIA FOTOGRÁFICA (MANTENIMIENTO REALIZADO) ===
@@ -635,35 +663,29 @@ def generar_docx_desde_dfs(
     i_trab = 1
     series_tanques = [valOrDash(row.get("N° de serie") or row.get("serie")) for row in tanques_for_block]
     for idx, serie in enumerate(series_tanques, start=1):
+        clave_base = f"foto_10_tank{idx}"
         add_subtitle(doc, f"10.{i_trab}. TRABAJOS REALIZADOS EN EL TANQUE {idx} DE SERIE: {serie}", indent=True)
         doc.add_paragraph("(ACTIVIDAD 1: FOTO ANTES Y FOTO DESPUÉS; DESCRIPCIÓN DEL TRABAJO REALIZADO)")
-        insertar_recuadro_foto(doc)
-        insertar_recuadro_foto(doc)
+        # se esperan dos imágenes: foto_10_tank{idx}__1 (antes), foto_10_tank{idx}__2 (despues)
+        add_foto_con_subtitulo(doc, "(ACTIVIDAD 1: FOTO ANTES Y FOTO DESPUÉS)", incluir_imagen=True, num_recuadros=2, clave_base=clave_base)
         doc.add_paragraph("(ACTIVIDAD 2: FOTO ANTES Y FOTO DESPUÉS; DESCRIPCIÓN DEL TRABAJO REALIZADO)")
-        insertar_recuadro_foto(doc)
-        insertar_recuadro_foto(doc)
+        add_foto_con_subtitulo(doc, "(ACTIVIDAD 2: FOTO ANTES Y FOTO DESPUÉS)", incluir_imagen=True, num_recuadros=2, clave_base=clave_base)
         i_trab += 1
 
     add_subtitle(doc, f"10.{i_trab}. TRABAJOS REALIZADOS EN REDES DE LLENADO Y RETORNO", indent=True)
-    doc.add_paragraph("(ACTIVIDAD 1: FOTO ANTES Y FOTO DESPUÉS; DESCRIPCIÓN DEL TRABAJO REALIZADO)")
-    insertar_recuadro_foto(doc)
-    insertar_recuadro_foto(doc)
-    doc.add_paragraph("(ACTIVIDAD 2: FOTO ANTES Y FOTO DESPUÉS; DESCRIPCIÓN DEL TRABAJO REALIZADO)")
-    insertar_recuadro_foto(doc)
-    insertar_recuadro_foto(doc)
+    clave_red = "foto_10_red_llenado_retorno"
+    add_foto_con_subtitulo(doc, "(ACTIVIDAD 1: FOTO ANTES Y FOTO DESPUÉS; DESCRIPCIÓN DEL TRABAJO REALIZADO)", incluir_imagen=True, num_recuadros=2, clave_base=clave_red)
+    add_foto_con_subtitulo(doc, "(ACTIVIDAD 2: FOTO ANTES Y FOTO DESPUÉS; DESCRIPCIÓN DEL TRABAJO REALIZADO)", incluir_imagen=True, num_recuadros=2, clave_base=clave_red)
     i_trab += 1
 
     add_subtitle(doc, f"10.{i_trab}. TRABAJOS REALIZADOS EN REDES DE CONSUMO", indent=True)
-    doc.add_paragraph("(ACTIVIDAD 1: FOTO ANTES Y FOTO DESPUÉS; DESCRIPCIÓN DEL TRABAJO REALIZADO)")
-    insertar_recuadro_foto(doc)
-    insertar_recuadro_foto(doc)
-    doc.add_paragraph("(ACTIVIDAD 2: FOTO ANTES Y FOTO DESPUÉS; DESCRIPCIÓN DEL TRABAJO REALIZADO)")
-    insertar_recuadro_foto(doc)
-    insertar_recuadro_foto(doc)
+    clave_consumo = "foto_10_red_consumo"
+    add_foto_con_subtitulo(doc, "(ACTIVIDAD 1: FOTO ANTES Y FOTO DESPUÉS; DESCRIPCIÓN DEL TRABAJO REALIZADO)", incluir_imagen=True, num_recuadros=2, clave_base=clave_consumo)
+    add_foto_con_subtitulo(doc, "(ACTIVIDAD 2: FOTO ANTES Y FOTO DESPUÉS; DESCRIPCIÓN DEL TRABAJO REALIZADO)", incluir_imagen=True, num_recuadros=2, clave_base=clave_consumo)
 
     # === 11,12,13 ===
     add_subtitle(doc, "11. EVIDENCIA FOTOGRÁFICA DE LA INSTALACIÓN")
-    insertar_recuadro_foto(doc)
+    insertar_imagen_si_existe(doc, "foto_11_1", imagenes)
     add_subtitle(doc, "12. Conclusiones")
     doc.add_paragraph("-")
     add_subtitle(doc, "13. Recomendaciones")
@@ -775,16 +797,28 @@ def build_dfs_from_json(payload):
     return df_info, df_tanques, df_accesorios, df_red, df_equipos, df_obs
 
 
-# Final: recibe JSON y devuelve .docx
+# Final: recibe FormData (payload + images) o JSON y devuelve .docx
 # ==========================================
 @app.route("/generar", methods=["POST"])
 def generar_informe():
     try:
-        payload = request.get_json()
+        # Acepta JSON o FormData con archivos
+        content_type = request.content_type or ""
+        if content_type.startswith("multipart/form-data"):
+            payload_raw = request.form.get("payload")
+            try:
+                payload = json.loads(payload_raw) if payload_raw else {}
+            except Exception as e:
+                return jsonify({"error": "Payload JSON inválido en form-data", "detail": str(e)}), 400
+            imagenes = request.files
+        else:
+            payload = request.get_json(silent=True)
+            imagenes = {}
+
         if not payload:
             return jsonify({"error": "No JSON recibido o body vacío"}), 400
 
-        # Validaciones mínimas
+        # Validaciones mínimas (igual que antes)
         general = payload.get("general", {}) or {}
         tanques = payload.get("tanques", []) or []
 
@@ -851,15 +885,20 @@ def generar_informe():
         # Construir DataFrames
         df_info, df_tanques, df_accesorios, df_red, df_equipos, df_obs = build_dfs_from_json(payload)
 
-        # Generar docx
-        ruta = generar_docx_desde_dfs(df_info, df_tanques, df_accesorios, df_red, df_equipos, df_obs)
+        # Generar docx (ahora con imagenes)
+        ruta = generar_docx_desde_dfs(df_info, df_tanques, df_accesorios, df_red, df_equipos, df_obs, imagenes)
 
-        # Enviar archivo
+        # Enviar archivo y limpiar
         try:
-            return send_file(ruta, as_attachment=True, download_name=os.path.basename(ruta))
+            response = send_file(ruta, as_attachment=True, download_name=os.path.basename(ruta))
         except TypeError:
-            # Compatibilidad con Flask < 2.0
-            return send_file(ruta, as_attachment=True)
+            response = send_file(ruta, as_attachment=True)
+        # eliminar archivo temporal de forma segura
+        try:
+            os.remove(ruta)
+        except Exception:
+            pass
+        return response
 
     except Exception as e:
         import traceback
@@ -873,15 +912,9 @@ def index():
     try:
         return render_template("pagina.html")
     except Exception:
-        return "<h3>Servidor Flask funcionando. Envia POST JSON a /generar</h3>"
+        return "<h3>Servidor Flask funcionando. Envia POST (FormData payload+fotos) a /generar</h3>"
 
 
 if __name__ == "__main__":
     # Para Render.com respeta el puerto de entorno; local usa 5000
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
-
-
-
-
-
-
