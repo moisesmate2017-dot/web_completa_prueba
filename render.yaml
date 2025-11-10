@@ -1,7 +1,0 @@
-services:
-  - type: web
-    name: informe_glp
-    env: python
-    plan: free
-    buildCommand: "cd render_app && pip install -r requirements.txt"
-    startCommand: "cd render_app && python servidor.py"
