@@ -184,7 +184,7 @@ def insertar_imagen_si_existe(doc, clave, imagenes, ancho_cm=15, alto_cm=10):
 # =========================
 def generar_docx_desde_dfs(
     df_info, df_tanques, df_accesorios, df_red, df_equipos, df_obs, imagenes=None
-):
+, imagenes=imagenes):
     if imagenes is None:
         imagenes = {}
     doc = Document()
@@ -922,7 +922,7 @@ def generar_informe():
             df_red,
             df_equipos,
             df_obs
-        )
+        , imagenes=imagenes)
 
         # ===============================
         # Enviar archivo al cliente
