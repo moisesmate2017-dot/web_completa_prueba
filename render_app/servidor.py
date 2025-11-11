@@ -183,8 +183,7 @@ def insertar_imagen_si_existe(doc, clave, imagenes, ancho_cm=15, alto_cm=10):
 # FUNCIÓN CENTRAL DOCX
 # =========================
 def generar_docx_desde_dfs(
-    df_info, df_tanques, df_accesorios, df_red, df_equipos, df_obs, imagenes=None
-, imagenes=imagenes):
+    df_info, df_tanques, df_accesorios, df_red, df_equipos, df_obs, imagenes=imagenes):
     if imagenes is None:
         imagenes = {}
     doc = Document()
@@ -970,6 +969,7 @@ def index():
 if __name__ == '__main__':
     # Flask ejecutará desde render_app/
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=True)
+
 
 
 
