@@ -1725,6 +1725,87 @@ function init(){
 }
 init();
 </script>
+
+<!-- === NUEVA INTERFAZ DE SUBIDA DE FOTOS === -->
+<div id="photoManager" style="background:#fff;padding:20px;border-radius:10px;margin-top:20px;box-shadow:0 0 10px rgba(0,0,0,0.1)">
+  <h2 style="color:#003366;text-align:center;">Gestión de Fotos</h2>
+  <p>Seleccione un subtítulo y suba la foto correspondiente.</p>
+  <select id="subtituloSelect" style="width:100%;padding:10px;border-radius:6px;margin-bottom:10px;"></select>
+  <input type="file" id="fotoInput" accept="image/*" style="width:100%;margin-bottom:10px;">
+  <button id="uploadBtn" style="background:#0056b3;color:white;padding:10px 15px;border:none;border-radius:6px;">Subir Foto</button>
+  <div id="statusArea" style="margin-top:20px;"></div>
+</div>
+
+<script>
+let fotos = {};
+let subtitulos = [];
+
+function cargarSubtitulos() {
+  // Obtener subtitulos generados desde el payload
+  const payload = buildPayload();
+  const accs = payload.accesoriosTanque || {};
+  subtitulos = [];
+  Object.keys(accs).forEach(tk=>{
+    Object.keys(accs[tk]).forEach(sub=>{
+      subtitulos.push(sub);
+    });
+  });
+  const select = document.getElementById('subtituloSelect');
+  select.innerHTML = '';
+  subtitulos.forEach(st=>{
+    const opt = document.createElement('option');
+    opt.value = st;
+    opt.textContent = st;
+    select.appendChild(opt);
+  });
+  mostrarEstado();
+}
+
+function mostrarEstado(){
+  const area = document.getElementById('statusArea');
+  area.innerHTML = '';
+  subtitulos.forEach(st=>{
+    const div = document.createElement('div');
+    div.style.padding='8px';
+    div.style.margin='5px 0';
+    div.style.borderRadius='6px';
+    div.style.background = fotos[st] ? '#d4edda' : '#f8d7da';
+    div.style.color = fotos[st] ? '#155724' : '#721c24';
+    div.textContent = `${st}: ${fotos[st] ? 'Foto subida ✔️' : 'Sin foto ❌'}`;
+    area.appendChild(div);
+  });
+}
+
+document.getElementById('uploadBtn').onclick=()=>{
+  const st = document.getElementById('subtituloSelect').value;
+  const file = document.getElementById('fotoInput').files[0];
+  if(!st||!file){alert('Seleccione subtítulo y archivo.');return;}
+  fotos[st]=file;
+  mostrarEstado();
+};
+
+async function generarInforme(){
+  const payload = buildPayload();
+  const formData = new FormData();
+  formData.append('payload', JSON.stringify(payload));
+  let i=0;
+  for(let k in fotos){
+    formData.append(`foto_${i}`, fotos[k]);
+    i++;
+  }
+  const res = await fetch('/generar',{method:'POST',body:formData});
+  if(res.ok){
+    const blob = await res.blob();
+    const link=document.createElement('a');
+    link.href=URL.createObjectURL(blob);
+    link.download='informe_generado.docx';
+    link.click();
+  }else alert('Error al generar informe');
+}
+</script>
+<!-- === FIN NUEVA INTERFAZ DE SUBIDA DE FOTOS === -->
+
 </body>
 </html>
+
 
