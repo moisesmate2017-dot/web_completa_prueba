@@ -844,6 +844,11 @@ function saveGeneral(showAlert=true){
   };
 
   if(showAlert) alert('Datos generales guardados correctamente.');
+
+  // restaurar avance de página o paso
+  if (typeof nextStep === 'function') nextStep();
+  else if (typeof mostrarSeccion === 'function') mostrarSeccion(2);
+
   return true;
 });
   if(missing.length){
@@ -2126,6 +2131,7 @@ document.getElementById('finalGenerate').addEventListener('click', generateWordW
 
 </body>
 </html>
+
 
 
 
