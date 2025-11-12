@@ -799,7 +799,7 @@ for i, equipo in enumerate(equipos_obs):
     fd, path = tempfile.mkstemp(prefix="Informe_Mantenimiento_", suffix=".docx")
     os.close(fd)
     doc.save(path)
-    return path
+                return path
 
 
 # UTIL: construir DataFrames desde JSON
@@ -1133,6 +1133,7 @@ def api_generate_docx():
 if __name__ == '__main__':
     # Flask ejecutará desde render_app/
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=True)
+
 
 
 
