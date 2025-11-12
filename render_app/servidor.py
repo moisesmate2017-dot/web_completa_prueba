@@ -157,15 +157,32 @@ def insertar_recuadro_foto(doc, ancho_cm=15, alto_cm=10):
 
 def insertar_imagen_si_existe(doc, clave, imagenes, ancho_cm=15, alto_cm=10):
     """
-    Inserta la imagen asociada a 'clave' (si viene en request.files).
-    Si no existe, inserta el recuadro de placeholder.
-    Para claves que admiten múltiples recuadros (clave__1, clave__2 ...),
-    la función puede ser llamada varias veces con la misma base.
+    Inserta la imagen asociada a 'clave' (si viene en request.files)
+    dentro de un recuadro fijo (15x10 cm por defecto).
+    Si no existe, inserta el recuadro con texto placeholder.
     """
+    ancho_in = ancho_cm / 2.54
+    alto_in = alto_cm / 2.54
+
+    # Si no hay imagen enviada, muestra recuadro vacío
     if not imagenes or clave not in imagenes:
-        # no hay imagen => placeholder
         insertar_recuadro_foto(doc, ancho_cm, alto_cm)
         return
+
+    try:
+        f = imagenes[clave]
+        # Inserta imagen ajustada a tamaño máximo del recuadro
+        p = doc.add_paragraph()
+        run = p.add_run()
+        picture = run.add_picture(f, width=Inches(ancho_in))
+        p.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+
+        # Asegura espacio entre imagen y siguiente párrafo
+        p.paragraph_format.space_after = Pt(4)
+
+    except Exception as e:
+        print(f"⚠️ Error insertando imagen {clave}: {e}")
+        insertar_recuadro_foto(doc, ancho_cm, alto_cm)
 
     try:
         f = imagenes[clave]
@@ -192,6 +209,9 @@ def construir_bloques_fotos(df_info, df_tanques, df_accesorios, df_red, df_equip
     """
     bloques = []
     contador = 1
+    # 8. Evidencia fotografica
+    bloques.append({'titulo': f"8. EVIDENCIA FOTOGRÁFICA (del establecimiento)", 'clave':'foto_8_1', 'fotos':1, 'aplica':True, 'order':contador});
+    
     # 9.1 Panorámica general
     bloques.append({'titulo': f"9.{contador}. FOTO PANORÁMICA DE LA ZONA", 'clave':'foto_9_panoramica', 'fotos':1, 'aplica':True, 'order':contador}); contador += 1
 
@@ -1133,6 +1153,7 @@ def api_generate_docx():
 if __name__ == '__main__':
     # Flask ejecutará desde render_app/
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=True)
+
 
 
 
