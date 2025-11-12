@@ -182,6 +182,79 @@ def insertar_imagen_si_existe(doc, clave, imagenes, ancho_cm=15, alto_cm=10):
 
 # FUNCIÓN CENTRAL DOCX
 # =========================
+
+# ------------------------
+# Construcción de bloques fotográficos (misma lógica que usa generar_docx_desde_dfs)
+def construir_bloques_fotos(df_info, df_tanques, df_accesorios, df_red, df_equipos, df_obs):
+    """
+    Devuelve una lista de diccionarios con: { 'titulo':str, 'clave':str, 'fotos':int, 'aplica':bool, 'order':int }
+    Orden y claves replican la lógica de generación del docx para asegurar compatibilidad.
+    """
+    bloques = []
+    contador = 1
+    # 9.1 Panorámica general
+    bloques.append({'titulo': f"9.{contador}. FOTO PANORÁMICA DE LA ZONA", 'clave':'foto_9_panoramica', 'fotos':1, 'aplica':True, 'order':contador}); contador += 1
+
+    # Placas por tanque
+    tanques_list = df_tanques.to_dict(orient='records') if (df_tanques is not None and not df_tanques.empty) else []
+    for i, t in enumerate(tanques_list):
+        serie = t.get('N° de serie') or t.get('serie') or '-'
+        bloques.append({'titulo': f"9.{contador}. PLACA DE TANQUE {i+1} DE SERIE: {serie}", 'clave':f'foto_9_placa_tank_{i+1}', 'fotos':1, 'aplica':True, 'order':contador}); contador += 1
+
+    # Panorámica de alrededores por tanque (4 recuadros)
+    for i, t in enumerate(tanques_list):
+        serie = t.get('N° de serie') or t.get('serie') or '-'
+        bloques.append({'titulo': f"9.{contador}. FOTO PANORÁMICA DE ALREDEDORES DE TANQUE {i+1} DE SERIE: {serie}", 'clave':f'foto_9_panoramica_tank_{i+1}', 'fotos':4, 'aplica':True, 'order':contador}); contador += 1
+
+    # Bloque iterativo según tanques (varios subtítulos por tanque)
+    for i, t in enumerate(tanques_list):
+        serie = t.get('N° de serie') or t.get('serie') or '-'
+        titles = [
+            f"FOTO DE BASES DE CONCRETO DE TANQUE {i + 1} DE SERIE: {serie}",
+            f"FOTO DE MANÓMETROS 0-60 PSI DE TANQUE {i + 1} DE SERIE: {serie}",
+            f"FOTO DE MANÓMETROS 0-300 PSI DE TANQUE {i + 1} DE SERIE: {serie}",
+            f"FOTO DE CONEXIÓN DE CHICOTE A LA MULTIVÁLVULA DE TANQUE {i + 1} DE SERIE: {serie}",
+            f"STICKERS DEL TANQUE {i + 1} DE SERIE: {serie} Y PINTADO",
+            f"FOTO DE LOS 04 ANCLAJES, PERNOS, TORNILLOS DEL TANQUE {i + 1} DE SERIE: {serie}",
+            f"FOTO DE VÁLVULA DE LLENADO DE TANQUE {i + 1} DE SERIE: {serie}",
+            f"FOTO DE VÁLVULA DE SEGURIDAD DE TANQUE {i + 1} DE SERIE: {serie}",
+            f"FOTO DE VÁLVULA DE DRENAJE DE TANQUE {i + 1} DE SERIE: {serie}",
+            f"FOTO DE VÁLVULA DE MULTIVÁLVULA DE TANQUE {i + 1} DE SERIE: {serie}",
+            f"FOTO DE VÁLVULA DE MEDIDOR DE PORCENTAJE DE TANQUE {i + 1} DE SERIE: {serie}",
+        ]
+        for idx_title, ttxt in enumerate(titles):
+            clave = f"foto_9_tank{ i+1 }_{ idx_title+1 }"
+            bloques.append({'titulo': f"9.{contador}. {ttxt}", 'clave':clave, 'fotos':1, 'aplica':True, 'order':contador}); contador += 1
+
+    # Equipos específicos
+    tipos = ["estabilizador", "quemador", "vaporizador", "tablero", "bomba", "dispensador_de_gas", "decantador", "detector"]
+    df_equipos_local = df_equipos.copy() if (df_equipos is not None) else pd.DataFrame()
+    equipos_for_block = df_equipos_local.to_dict(orient='records') if (not df_equipos_local.empty) else []
+    for tipo in tipos:
+        lista_eq = [eq for eq in equipos_for_block if (eq.get('Tipo de equipo') or '').lower() == tipo]
+        if lista_eq:
+            for idx_eq, eq in enumerate(lista_eq):
+                serie = eq.get('Serie') or '-'
+                clave_placa = f"foto_9_{tipo}_placa_{idx_eq+1}"
+                clave_general = f"foto_9_{tipo}_general_{idx_eq+1}"
+                bloques.append({'titulo': f"9.{contador}. FOTO DE PLACA DE {tipo.upper()} DE SERIE: {serie}", 'clave':clave_placa, 'fotos':1, 'aplica':True, 'order':contador}); contador += 1
+                bloques.append({'titulo': f"9.{contador}. FOTO DE {tipo.upper()}", 'clave':clave_general, 'fotos':1, 'aplica':True, 'order':contador}); contador += 1
+        else:
+            clave_placa = f"foto_9_{tipo}_placa_1"
+            clave_general = f"foto_9_{tipo}_general_1"
+            bloques.append({'titulo': f"9.{contador}. FOTO DE PLACA DE {tipo.upper()} DE SERIE: -", 'clave':clave_placa, 'fotos':1, 'aplica':False, 'order':contador}); contador += 1
+            bloques.append({'titulo': f"9.{contador}. FOTO DE {tipo.upper()}", 'clave':clave_general, 'fotos':1, 'aplica':False, 'order':contador}); contador += 1
+
+    # Toma desplazada (llenado_toma_desplazada)
+    tiene_toma = False
+    try:
+        if df_red is not None and 'Tipo' in df_red.columns:
+            tiene_toma = df_red['Tipo'].astype(str).str.lower().str.contains('llenado_toma_desplazada').any()
+    except Exception:
+        tiene_toma = False
+    bloques.append({'titulo': f"9.{contador}. FOTO DEL PUNTO DE TRANSFERENCIA DESPLAZADO", 'clave':'foto_9_toma_transferencia', 'fotos':1, 'aplica': bool(tiene_toma), 'order':contador}); contador += 1
+
+    return bloques
 def generar_docx_desde_dfs(
     df_info, df_tanques, df_accesorios, df_red, df_equipos, df_obs, imagenes):
     if imagenes is None:
@@ -966,9 +1039,71 @@ def index():
 # ======================================================
 # Punto de entrada del servidor
 # ======================================================
+# API: devolver bloques fotográficos (POST JSON)
+@app.route('/bloques_fotos', methods=['POST'])
+def api_bloques_fotos():
+    try:
+        data = request.get_json(force=True)
+        # convert to pandas DataFrames where applicable
+        df_tanques = pd.DataFrame(data.get('tanks', []))
+        df_accesorios = pd.DataFrame()  # frontend doesn't send detailed table by default
+        df_red = pd.DataFrame(data.get('redes', []))
+        df_equipos = pd.DataFrame(data.get('equipos', []))
+        df_info = pd.DataFrame([data.get('generalInfo', {})]) if data.get('generalInfo') else pd.DataFrame()
+        df_obs = pd.DataFrame([data.get('obs', {})]) if data.get('obs') else pd.DataFrame()
+        bloques = construir_bloques_fotos(df_info, df_tanques, df_accesorios, df_red, df_equipos, df_obs)
+        return jsonify(bloques)
+    except Exception as e:
+        print('Error /bloques_fotos:', e)
+        return jsonify({'error': str(e)}), 500
+
+# API: generar docx (acepta FormData: 'payload' JSON + files)
+@app.route('/generate_docx', methods=['POST'])
+def api_generate_docx():
+    try:
+        payload_raw = request.form.get('payload')
+        payload = json.loads(payload_raw) if payload_raw else {}
+        # build dataframes
+        df_info = pd.DataFrame([payload.get('generalInfo', {})]) if payload.get('generalInfo') else pd.DataFrame()
+        df_tanques = pd.DataFrame(payload.get('tanks', []))
+        df_accesorios = pd.DataFrame()  # if frontend sends accessories detail, parse here
+        df_red = pd.DataFrame(payload.get('redes', []))
+        df_equipos = pd.DataFrame(payload.get('equipos', []))
+        df_obs = pd.DataFrame([payload.get('obs', {})]) if payload.get('obs') else pd.DataFrame()
+
+        # collect images from request.files into a dict mapping key -> file
+        imagenes = {}
+        for key in request.files:
+            imagenes[key] = request.files.get(key)
+
+        # call generation function
+        doc_path = None
+        try:
+            doc = generar_docx_desde_dfs(df_info, df_tanques, df_accesorios, df_red, df_equipos, df_obs, imagenes)
+            # generar_docx_desde_dfs returns a Document object or saves and returns path depending on implementation.
+            # We'll accept both: if returns path -> send_file, if returns Document -> save temp and send.
+            if isinstance(doc, str) and os.path.exists(doc):
+                doc_path = doc
+            else:
+                # assume doc is python-docx Document object
+                tmp_fd, tmp_path = tempfile.mkstemp(suffix='.docx')
+                os.close(tmp_fd)
+                doc.save(tmp_path)
+                doc_path = tmp_path
+        except Exception as e:
+            print('Error generating doc:', e)
+            return jsonify({'error': str(e)}), 500
+
+        # send file
+        return send_file(doc_path, as_attachment=True, download_name='informe.docx')
+    except Exception as e:
+        print('Error /generate_docx:', e)
+        return jsonify({'error': str(e)}), 500
+
 if __name__ == '__main__':
     # Flask ejecutará desde render_app/
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=True)
+
 
 
 
