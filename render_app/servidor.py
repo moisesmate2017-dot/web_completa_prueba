@@ -522,45 +522,75 @@ def generar_docx_desde_dfs(
         for k in estructura_equipos.keys()
     }
 
-    # === 7. Observaciones generales ===
-    add_subtitle(doc, "7. OBSERVACIONES GENERALES")
-    df_obs_local = df_obs.copy() if df_obs is not None else pd.DataFrame(columns=["Subpunto", "Observación"])
-    subtitulos_7 = {
-        "7.1": "7.1. Observaciones al cliente",
-        "7.2": "7.2. Observaciones en red de llenado y retorno",
-        "7.3": "7.3. Observaciones en zona de tanque",
-        "7.4": "7.4. Observaciones en red de consumo",
+   # === 7. Observaciones generales ===
+add_subtitle(doc, "7. OBSERVACIONES GENERALES")
+
+# Asegurar estructura estándar de observaciones
+if df_obs is None:
+    df_obs_local = pd.DataFrame(columns=["Subpunto", "Observación"])
+elif isinstance(df_obs, dict):
+    # convertir dict {"obs_71": "...", ...} a DataFrame estándar
+    rows = []
+    mapping = {
+        "obs_71": "7.1",
+        "obs_72": "7.2",
+        "obs_73": "7.3",
+        "obs_74": "7.4",
+        "obs_75": "7.5",
     }
-    for clave, titulo in subtitulos_7.items():
-        add_subtitle(doc, titulo, indent=True)
+    for k, v in df_obs.items():
+        if k in mapping:
+            rows.append({"Subpunto": mapping[k], "Observación": v})
+    df_obs_local = pd.DataFrame(rows)
+else:
+    df_obs_local = df_obs.copy()
+
+subtitulos_7 = {
+    "7.1": "7.1. Observaciones al cliente",
+    "7.2": "7.2. Observaciones en red de llenado y retorno",
+    "7.3": "7.3. Observaciones en zona de tanque",
+    "7.4": "7.4. Observaciones en red de consumo",
+}
+
+for clave, titulo in subtitulos_7.items():
+    add_subtitle(doc, titulo, indent=True)
+    try:
         texto = df_obs_local[df_obs_local["Subpunto"] == clave]["Observación"].values
         if len(texto) and str(texto[0]).strip() != "":
             doc.add_paragraph(str(texto[0]).strip())
         else:
             doc.add_paragraph("-")
+    except Exception:
+        doc.add_paragraph("-")
 
-    add_subtitle(doc, "7.5. Observaciones en equipos varios (Vaporizador, Quemador, Decantador, etc)", indent=True)
-    equipos_obs = [
-        "Vaporizador",
-        "Quemador",
-        "Decantador",
-        "Dispensador de gas",
-        "Bomba de abastecimiento",
-        "Tablero eléctrico",
-        "Estabilizador",
-        "Detector de gases",
-        "Extintor",
-    ]
-    tabla_obs = create_table(doc, len(equipos_obs) + 1, 2, indent=True)
-    set_cell_style(tabla_obs.cell(0, 0), "Equipo", bold=True)
-    set_cell_style(tabla_obs.cell(0, 1), "Observación", bold=True)
+# 7.5
+add_subtitle(doc, "7.5. Observaciones en equipos varios (Vaporizador, Quemador, Decantador, etc)", indent=True)
+equipos_obs = [
+    "Vaporizador",
+    "Quemador",
+    "Decantador",
+    "Dispensador de gas",
+    "Bomba de abastecimiento",
+    "Tablero eléctrico",
+    "Estabilizador",
+    "Detector de gases",
+    "Extintor",
+]
+tabla_obs = create_table(doc, len(equipos_obs) + 1, 2, indent=True)
+set_cell_style(tabla_obs.cell(0, 0), "Equipo", bold=True)
+set_cell_style(tabla_obs.cell(0, 1), "Observación", bold=True)
+texto_75 = []
+try:
     texto_75 = df_obs_local[df_obs_local["Subpunto"] == "7.5"]["Observación"].values
-    observaciones_75 = []
-    if len(texto_75) and str(texto_75[0]).strip():
-        observaciones_75 = [x.strip() for x in str(texto_75[0]).split(".") if x.strip()]
-    for i, equipo in enumerate(equipos_obs):
-        set_cell_style(tabla_obs.cell(i + 1, 0), equipo)
-        set_cell_style(tabla_obs.cell(i + 1, 1), observaciones_75[i] if i < len(observaciones_75) else "-")
+except Exception:
+    pass
+
+observaciones_75 = []
+if len(texto_75) and str(texto_75[0]).strip():
+    observaciones_75 = [x.strip() for x in str(texto_75[0]).split(".") if x.strip()]
+for i, equipo in enumerate(equipos_obs):
+    set_cell_style(tabla_obs.cell(i + 1, 0), equipo)
+    set_cell_style(tabla_obs.cell(i + 1, 1), observaciones_75[i] if i < len(observaciones_75) else "-")
 
     # === 8. Evidencia general ===
     add_subtitle(doc, "8. EVIDENCIA FOTOGRÁFICA (del establecimiento)")
@@ -1103,6 +1133,7 @@ def api_generate_docx():
 if __name__ == '__main__':
     # Flask ejecutará desde render_app/
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=True)
+
 
 
 
