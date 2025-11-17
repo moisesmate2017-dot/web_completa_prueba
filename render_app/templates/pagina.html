@@ -2068,7 +2068,7 @@ async function generateWordWithPhotos(e){
   }
 
   try {
-    const res = await fetch('/generate_docx', {
+    const res = await fetch('/generar', {
       method: 'POST',
       body: form
     });
@@ -2099,10 +2099,3 @@ document.getElementById('finalGenerate').addEventListener('click', generateWordW
 
 </body>
 </html>
-
-
-
-
-
-
-
