@@ -1847,7 +1847,7 @@ async function generateWordWithPhotos(e){
     btn.disabled = true;
     btn.innerText = 'Generando...';
 
-    const res = await fetch('/generate_docx', {
+    const res = await fetch('/generar', {
       method: 'POST',
       body: form
     });
@@ -1949,3 +1949,4 @@ init();
 
 </body>
 </html>
+
