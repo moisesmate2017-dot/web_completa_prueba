@@ -810,47 +810,15 @@ function loginCancel(){
 /* -------------------------
    STEP 1: General
    ------------------------- */
-function saveGeneral(showAlert=true){
-  const nombre = document.getElementById('g_cliente').value.trim();
-  const fecha = document.getElementById('g_fecha').value.trim();
-  const direccion = document.getElementById('g_direccion').value.trim();
-  const rucdni = document.getElementById('g_rucdni').value.trim();
-  const instalacion = document.getElementById('g_instalacion').value.trim();
-  const distrito = document.getElementById('g_distrito').value.trim();
-  const departamento = document.getElementById('g_departamento').value.trim();
-  const coords = document.getElementById('g_coordenadas').value.trim();
-  const contacto = document.getElementById('g_contacto').value.trim();
-  const telefono = document.getElementById('g_telefono').value.trim();
-  const correo = document.getElementById('g_correo').value.trim();
-
-  if(!nombre || !fecha || !direccion || !rucdni || !instalacion || !distrito || 
-     !departamento || !coords || !contacto || !telefono || !correo){
-    if(showAlert) alert('Por favor completa todos los campos obligatorios del paso 1.');
-    return false;
-  }
-
-  generalInfo = {
-    "Nombre o razón social del cliente": nombre,
-    "Fecha de inspección": fecha,
-    "Dirección": direccion,
-    "RUC o DNI": rucdni,
-    "Número de instalación": instalacion,
-    "Distrito": distrito,
-    "Departamento": departamento,
-    "Coordenadas": coords,
-    "Nombre del contacto": contacto,
-    "Número del contacto": telefono,
-    "Correo de contacto": correo
-  };
-
-  if(showAlert) alert('Datos generales guardados correctamente.');
-
-  // restaurar avance de página o paso
-  if (typeof nextStep === 'function') nextStep();
-  else if (typeof mostrarSeccion === 'function') mostrarSeccion(2);
-
-  return true;
-});
+function saveGeneral(showMsg=false){
+  const required = [
+    "g_nombre","g_fecha","g_direccion","g_ruc","g_numinst","g_distrito",
+    "g_departamento","g_coordenadas","g_contacto","g_telefono","g_correo"
+  ];
+  const missing = required.filter(id => {
+    const el = document.getElementById(id);
+    return !el || !String(el.value || '').trim();
+  });
   if(missing.length){
     document.getElementById('err-step-1').innerText = 'Faltan campos obligatorios en Información general.';
     return false;
@@ -2100,7 +2068,7 @@ async function generateWordWithPhotos(e){
   }
 
   try {
-    const res = await fetch('/generar', {
+    const res = await fetch('/generate_docx', {
       method: 'POST',
       body: form
     });
@@ -2131,3 +2099,5 @@ document.getElementById('finalGenerate').addEventListener('click', generateWordW
 
 </body>
 </html>
+
+
