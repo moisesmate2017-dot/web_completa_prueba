@@ -31,7 +31,7 @@ html,body{height:100%;margin:0;background:linear-gradient(160deg,var(--bg-1),var
 .header{display:flex;align-items:center;gap:12px;margin-bottom:18px}
 .logo{width:64px;height:64px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--gold));display:flex;align-items:center;justify-content:center;color:#041218;font-weight:800;box-shadow:0 10px 30px rgba(0,194,255,0.07)}
 .title{font-size:20px;margin:0}
-.lead{color:var(--muted);font-size:13px;margin:0}
+.lead{Color:var(--muted);font-size:13px;margin:0}
 
 /* PROGRESS BAR (fixed top) */
 #topProgressWrap{position:fixed;left:0;right:0;top:0;height:8px;background:rgba(255,255,255,0.06);z-index:120;border-bottom:1px solid rgba(255,255,255,0.02)}
@@ -145,7 +145,7 @@ td.accesorio {
 
 /* PHOTO TABLE STYLES */
 .photo-table { width:100%; border-collapse:collapse; margin-top:8px; background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.005)); border-radius:8px; overflow:hidden; }
-.photo-table th, .photo-table td { padding:10px 12px; text-align:left; border-bottom:1px solid rgba(255,255,255,0.03); font-size:13px; color: #e6f7ff; }
+.photo-table th, .photo-table td { padding:10px 12px; text-align:left; border-bottom:1px solid rgba(255,255,255,0.03); font-size:13px; color: #e6f7ff; vertical-align:middle }
 .photo-table thead th { background: linear-gradient(90deg,var(--accent),var(--gold)); color:#041018; font-weight:700; }
 .photo-table tbody tr.disabled { opacity:0.45; }
 .badge-state { padding:6px 10px; border-radius:999px; font-weight:700; display:inline-block; min-width:64px; text-align:center; }
@@ -157,6 +157,7 @@ td.accesorio {
 .file-input-hidden { display:none; }
 .photo-row-title { font-weight:700; color:#ffffff; }
 .photo-row-sub { font-size:12px; color:var(--muted); }
+.preview-thumb { width:80px; height:56px; object-fit:cover; border-radius:6px; border:1px solid #cfeef8; display:inline-block; margin-right:8px; vertical-align:middle; }
 @media (max-width:980px){ .photo-table th, .photo-table td { font-size:12px; padding:8px } }
 
 </style>
@@ -634,13 +635,11 @@ td.accesorio {
           </div>
           <div><span class="hint">Paso 7 / 7</span></div>
         </div>
-
-        <div>
-
+<div>
           <div class="label" style="margin-top:10px">Lista de fotografías requeridas</div>
           <div id="photoContainer" style="margin-top:8px"></div>
 
-          <div style="margin-top:12px" class="small-muted">Sugerencia: sube cada imagen con calidad adecuada. Para campos que requieren múltiples fotos (ej. 4 recuadros), selecciona todas las imágenes al mismo tiempo.</div>
+          <div style="margin-top:12px" class="small-muted">Sugerencia: sube cada imagen con calidad adecuada. Para campos que requieren múltiples fotos (ej. 4 recuadros), selecciona todas las imágenes al mismo timepo.</div>
         </div>
 
         <div style="margin-top:14px" id="err-step-7" class="errlist"></div>
@@ -683,16 +682,16 @@ td.accesorio {
 const allowedEmails = [
   "alexander.buleje@solgas.com.pe",
   "renzo.delgado@solgas.com.pe",
-	"ingenieriaeye@hotmail.com",
-	"jarmas@inginor.com.pe",
-	"Jaime.valdeiglesias16@totalgassac.com",
-	"area.mantenimiento@gsgasperu.com",
-	"mantenimiento@cmagol.com.pe",
-	"aherrera@gypingenieros.com",
-	"iserrepe@openersac.com",
-	"operacionesglp@northcompany.com.pe",
-	"ingenieria1@semmaq.com",
-	"administracion@citecservices.com"
+  "ingenieriaeye@hotmail.com",
+  "jarmas@inginor.com.pe",
+  "Jaime.valdeiglesias16@totalgassac.com",
+  "area.mantenimiento@gsgasperu.com",
+  "mantenimiento@cmagol.com.pe",
+  "aherrera@gypingenieros.com",
+  "iserrepe@openersac.com",
+  "operacionesglp@northcompany.com.pe",
+  "ingenieria1@semmaq.com",
+  "administracion@citecservices.com"
 ];
 
 /* -------------------------
@@ -740,26 +739,7 @@ function updateProgressUI() {
   document.getElementById('status-7').innerText = 'Carga de fotos';
 }
 
-/* Navigation */
-function showStep(n) {
-  currentStep = n;
-  for (let i=1;i<=TOTAL_STEPS;i++){
-    const stepEl = document.getElementById(`step-${i}`);
-    if(stepEl) stepEl.classList.remove('active');
-    const nav = document.querySelector(`.nav-item[data-step="${i}"]`);
-    if(nav) nav.classList.remove('active');
-  }
-  const target = document.getElementById(`step-${n}`);
-  if(target){
-    target.classList.add('active');
-    // if step 7, (re)build dynamic photo fields using current state
-    if(n === 7) buildPhotoFields();
-  }
-  const navActive = document.querySelector(`.nav-item[data-step="${n}"]`);
-  if(navActive) navActive.classList.add('active');
-  updateProgressUI();
-}
-
+/* Navigation helpers (next/prev/navTo) */
 function nextStep(){
   if(!validateStep(currentStep)) return;
   if(currentStep < TOTAL_STEPS) showStep(currentStep + 1);
@@ -1289,6 +1269,11 @@ function deleteRed(i){
 /* -------------------------
    STEP 5: Equipos
    ------------------------- */
+function clearEquipoForm(){
+  document.getElementById('eq_tipo').value = '';
+  document.getElementById('eq_name').value = '';
+  document.getElementById('dynamicFields').innerHTML = '';
+}
 document.getElementById('eq_tipo').addEventListener('change', function(){
   const tipo = this.value;
   const nameInput = document.getElementById('eq_name');
@@ -1456,390 +1441,36 @@ function buildPayload(){
 }
 
 /* -------------------------
-   STEP 7: Build photo fields dynamically
+   STEP 7: Dynamic photo table (server-driven) + previews
    ------------------------- */
 
 /*
- We replicate the backend's keys and block generation logic here so the frontend
- exposes inputs for all the expected photo keys and uses human-friendly labels.
+ uploadedPhotos: internal mapping clave -> [File, ...]
+ bloquesFotosCache: array of blocks coming from server: {titulo, clave, fotos, aplica, order}
+ We'll build a table inside #photoContainer showing:
+   - subtitle (titulo)
+   - small preview thumbnails (if files uploaded)
+   - number of required photos
+   - status badge
+   - actions: select files (hidden input), View, Remove
 */
+
+let uploadedPhotos = {}; // clave => [File,...]
+let bloquesFotosCache = []; // server provided photo blocks
+
 function safeVal(v){ return v && String(v).trim() ? String(v).trim() : '-' }
-
-function buildPhotoFields(){
-  const container = document.getElementById('photoContainer');
-  container.innerHTML = '';
-
-  // helper to add an input
-  function addFileInput(key, label, multipleSlots = 1){
-    if(multipleSlots <= 1){
-      const card = document.createElement('div');
-      card.className = 'photo-card';
-      card.innerHTML = `
-        <label>${label}</label>
-        <input type="file" accept="image/*" name="${key}" id="input_${key}" />
-        <img id="preview_${key}" class="photo-preview" src="" alt="" style="display:none"/>
-        <div class="small-muted">Clave: <code>${key}</code></div>
-      `;
-      const inp = card.querySelector('input[type=file]');
-      const img = card.querySelector('img');
-      inp.addEventListener('change', (ev)=>handlePreview(ev.target, img));
-      container.appendChild(card);
-    } else {
-      // multipleSlots: create N inputs named key__1, key__2, ...
-      for(let n=1;n<=multipleSlots;n++){
-        const keyn = `${key}__${n}`;
-        const card = document.createElement('div');
-        card.className = 'photo-card';
-        card.innerHTML = `
-          <label>${label} (recuadro ${n})</label>
-          <input type="file" accept="image/*" name="${keyn}" id="input_${keyn}" />
-          <img id="preview_${keyn}" class="photo-preview" src="" alt="" style="display:none"/>
-          <div class="small-muted">Clave: <code>${keyn}</code></div>
-        `;
-        const inp = card.querySelector('input[type=file]');
-        const img = card.querySelector('img');
-        inp.addEventListener('change', (ev)=>handlePreview(ev.target, img));
-        container.appendChild(card);
-      }
-    }
-  }
-
-  function handlePreview(inputEl, imgEl){
-    const f = inputEl.files && inputEl.files[0];
-    if(!f){ imgEl.style.display='none'; imgEl.src=''; return; }
-    const url = URL.createObjectURL(f);
-    imgEl.src = url;
-    imgEl.style.display = 'block';
-  }
-
-  // 8. Evidence general
-  addFileInput('foto_8_1', '8. Evidencia fotográfica (del establecimiento) - Panorámica');
-
-  // 9. Evidencia fotográfica de elementos de la instalación
-  // 9.1 Panorámica general
-  addFileInput('foto_9_panoramica', '9.1 FOTO PANORÁMICA DE LA ZONA');
-
-  // Placas por tanque and surrounding panoramas & multiple recuadros etc.
-  tanks.forEach((t, idx) => {
-    const i = idx + 1;
-    const serie = safeVal(t.serie);
-    // placa de tanque
-    addFileInput(`foto_9_placa_tank_${i}`, `PLACA DE TANQUE ${i} DE SERIE: ${serie}`);
-    // panorámica de alrededores (asumimos 4 recuadros)
-    addFileInput(`foto_9_panoramica_tank_${i}`, `FOTO PANORÁMICA DE ALREDEDORES DE TANQUE ${i} DE SERIE: ${serie}`, 4);
-
-    // series of per-tank subtítulos (list similar to backend)
-    const titles = [
-      `FOTO DE BASES DE CONCRETO DE TANQUE ${i} DE SERIE: ${serie}`,
-      `FOTO DE MANÓMETROS 0-60 PSI DE TANQUE ${i} DE SERIE: ${serie}`,
-      `FOTO DE MANÓMETROS 0-300 PSI DE TANQUE ${i} DE SERIE: ${serie}`,
-      `FOTO DE CONEXIÓN DE CHICOTE A LA MULTIVÁLVULA DE TANQUE ${i} DE SERIE: ${serie}`,
-      `STICKERS DEL TANQUE ${i} DE SERIE: ${serie} Y PINTADO`,
-      `FOTO DE LOS 04 ANCLAJES, PERNOS, TORNILLOS DEL TANQUE ${i} DE SERIE: ${serie}`,
-      `FOTO DE VÁLVULA DE LLENADO DE TANQUE ${i} DE SERIE: ${serie}`,
-      `FOTO DE VÁLVULA DE SEGURIDAD DE TANQUE ${i} DE SERIE: ${serie}`,
-      `FOTO DE VÁLVULA DE DRENAJE DE TANQUE ${i} DE SERIE: ${serie}`,
-      `FOTO DE VÁLVULA DE MULTIVÁLVULA DE TANQUE ${i} DE SERIE: ${serie}`,
-      `FOTO DE VÁLVULA DE MEDIDOR DE PORCENTAJE DE TANQUE ${i} DE SERIE: ${serie}`
-    ];
-    titles.forEach((txt, j) => {
-      // backend used keys like foto_9_tank{ i+1 }_{ idx_title+1 }
-      const key = `foto_9_tank${i}_${j+1}`;
-      addFileInput(key, `9.${/* dynamic numbering not required here */''} ${txt}`);
-    });
-  });
-
-  // Equipos específicos: for each equipment type in estructuraEquipos, produce inputs for placas and general photos
-  Object.keys(estructuraEquipos).forEach(tipo => {
-    const lista_eq = equipos.filter(e => e["Tipo de equipo"] === tipo);
-    if(lista_eq && lista_eq.length){
-      lista_eq.forEach((eq, idxEq) => {
-        const serie = safeVal(eq["Serie"] || eq["serie"]);
-        const placaKey = `foto_9_${tipo}_placa_${idxEq+1}`;
-        const generalKey = `foto_9_${tipo}_general_${idxEq+1}`;
-        addFileInput(placaKey, `FOTO DE PLACA DE ${tipo.toUpperCase()} DE SERIE: ${serie}`);
-        addFileInput(generalKey, `FOTO DE ${tipo.toUpperCase()} (general)`);
-      });
-    } else {
-      // even if none, still provide keys according to backend (one placeholder each)
-      const placaKey = `foto_9_${tipo}_placa_1`;
-      const generalKey = `foto_9_${tipo}_general_1`;
-      addFileInput(placaKey, `FOTO DE PLACA DE ${tipo.toUpperCase()} DE SERIE: -`);
-      addFileInput(generalKey, `FOTO DE ${tipo.toUpperCase()}`);
-    }
-  });
-
-  // Toma desplazada (llenado_toma_desplazada) related photos
-  // If accessory exists in redes, mark exists, else still create placeholders
-  const tiene_toma = redes.some(r => r.Tipo === 'llenado_toma_desplazada');
-  addFileInput('foto_9_toma_transferencia', 'FOTO DEL PUNTO DE TRANSFERENCIA DESPLAZADO');
-  addFileInput('foto_9_toma_caja', 'FOTO DE LA CAJA DE LA TOMA DESPLAZADA');
-  addFileInput('foto_9_toma_recorrido', 'FOTO DEL RECORRIDO DESDE TOMA DESPLAZADA HASTA TANQUE');
-
-  // Accesorios individuales map -> keys foto_9_acc_{clave_map}_{idx+1}
-  const mapa = {
-    "llenado_toma_desplazada": "VÁLVULA DE LLENADO TOMA DESPLAZADA",
-    "retorno_toma_desplazada": "VÁLVULA DE RETORNO TOMA DESPLAZADA",
-    "alivio": "VÁLVULA DE ALIVIO",
-    "regulador_2da": "REGULADOR DE SEGUNDA ETAPA",
-    "pull_away": "VÁLVULA PULL AWAY",
-    "alivio_hidrostatico": "VÁLVULA DE ALIVIO HIDROSTÁTICO",
-    "regulador_primera_etapa": "REGULADOR DE PRIMERA ETAPA"
-  };
-
-  Object.keys(mapa).forEach(clave_map => {
-    const lista = redes.filter(r => r.Tipo === clave_map);
-    const cantidad = Math.max(1, lista.length);
-    for(let idx=0; idx<cantidad; idx++){
-      const codigo = lista[idx] ? safeVal(lista[idx].Código) : '-';
-      const key = `foto_9_acc_${clave_map}_${idx+1}`;
-      addFileInput(key, `FOTO DE ${mapa[clave_map]} ${idx+1} DE CÓDIGO: ${codigo}`);
-    }
-  });
-
-  // Zona de medidores
-  addFileInput('foto_9_zona_medidores', 'FOTO DE ZONA MEDIDORES');
-
-  // === Punto 10: Evidencia de trabajos realizados (antes/después) ===
-  // For each tanque: expect foto_10_tank{idx}__1 and __2 (antes y despues) (and possibly more)
-  tanks.forEach((t, idx) => {
-    const i = idx + 1;
-    const serie = safeVal(t.serie);
-    const baseKey = `foto_10_tank${i}`;
-    addFileInput(`${baseKey}__1`, `10. Trabajos - Tanque ${i} (ANTES) - Serie ${serie}`);
-    addFileInput(`${baseKey}__2`, `10. Trabajos - Tanque ${i} (DESPUÉS) - Serie ${serie}`);
-    // Adding second activity (2) as well (same keys reused would be ambiguous) -> create more (optional)
-    addFileInput(`${baseKey}_act2__1`, `10. Trabajos - Tanque ${i} Actividad2 (ANTES) - Serie ${serie}`);
-    addFileInput(`${baseKey}_act2__2`, `10. Trabajos - Tanque ${i} Actividad2 (DESPUÉS) - Serie ${serie}`);
-  });
-
-  // Trabajos en redes de llenado/retorno y consumo (two before/after each)
-  addFileInput('foto_10_red_llenado_retorno__1', '10. Trabajos en redes de llenado y retorno (ANTES)');
-  addFileInput('foto_10_red_llenado_retorno__2', '10. Trabajos en redes de llenado y retorno (DESPUÉS)');
-  addFileInput('foto_10_red_consumo__1', '10. Trabajos en redes de consumo (ANTES)');
-  addFileInput('foto_10_red_consumo__2', '10. Trabajos en redes de consumo (DESPUÉS)');
-
-  // 11. EVIDENCIA FOTOGRÁFICA DE LA INSTALACIÓN
-  addFileInput('foto_11_1', '11. EVIDENCIA FOTOGRÁFICA DE LA INSTALACIÓN');
-
-  // final note: show small guidance
-  const guidance = document.createElement('div');
-  guidance.className = 'small-muted';
-  guidance.style.gridColumn = '1/-1';
-  guidance.innerText = 'Si no subes una foto para una clave, el informe dejará el recuadro vacío / con nota. Para recuadros “antes/después” sube ambos archivos con las claves indicadas.';
-  container.appendChild(guidance);
-}
-
-/* -------------------------
-   Final building payload & send (FormData with files)
-   ------------------------- */
-
-async function handleGenerate(){
-  try {
-    for(let i=1;i<=6;i++){
-      if(!validateStep(i)) { showStep(i); throw 'Validation failed'; }
-    }
-    // Build payload
-    const payload = buildPayload();
-
-    // Build FormData: payload + all files found in photoContainer inputs
-    const formData = new FormData();
-    formData.append('payload', JSON.stringify(payload));
-
-    // Collect all inputs in photoContainer
-    const inputs = document.querySelectorAll('#photoContainer input[type="file"]');
-    inputs.forEach(inp => {
-      if(inp.files && inp.files.length > 0){
-        formData.append(inp.name, inp.files[0]);
-      }
-    });
-
-    const btn = document.getElementById('finalGenerate');
-    btn.disabled = true;
-    btn.innerText = 'Generando...';
-
-    const res = await fetch('/generar', {
-      method: 'POST',
-      body: formData
-      // no content-type header: browser sets multipart/form-data with boundary
-    });
-
-    if(!res.ok){
-      const err = await res.json().catch(()=>({error:'Error servidor'}));
-      alert('Error: ' + (err.error || JSON.stringify(err)));
-      btn.disabled = false;
-      btn.innerText = 'Generar Word →';
-      return;
-    }
-
-    const contentType = res.headers.get('content-type') || '';
-    if(contentType.includes('application/json')){
-      const j = await res.json();
-      alert('Error: ' + (j.error || JSON.stringify(j)));
-      btn.disabled = false;
-      btn.innerText = 'Generar Word →';
-      return;
-    }
-
-    const blob = await res.blob();
-    const disposition = res.headers.get('content-disposition') || '';
-    let filename = 'Informe_Mantenimiento.docx';
-    const fnMatch = /filename\*=UTF-8''(.+)|filename="?(.+)"?/.exec(disposition);
-    if(fnMatch){
-      filename = decodeURIComponent(fnMatch[1] || fnMatch[2] || filename);
-    }
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-    btn.disabled = false;
-    btn.innerText = 'Generar Word →';
-    alert('Informe generado y descargado.');
-  } catch(err){
-    console.error(err);
-    if(err !== 'Validation failed') alert('Error: ' + err);
-    document.getElementById('finalGenerate').disabled = false;
-    document.getElementById('finalGenerate').innerText = 'Generar Word →';
-  }
-}
-
-/* Bind top generate/button */
-document.getElementById('btnGenerate').addEventListener('click', () => {
-  showStep(7);
-});
-document.getElementById('downloadTemplateBtn').addEventListener('click', () => {
-  alert('La plantilla ahora no se descarga; usa el formulario para generar el informe.');
-});
-
-/* Reset */
-function resetApp(){
-  if(!confirm('Reiniciar todos los datos?')) return;
-  generalInfo = {};
-  tanks = [];
-  accessoriesByTank = {};
-  redes = [];
-  equipos = [];
-  zona_medidores_val = null;
-  document.querySelectorAll('input[type=text], input[type=email], input[type=number], textarea').forEach(i => i.value = '');
-  document.querySelectorAll('select').forEach(s => s.value = '');
-  renderTanks(); renderAccList(''); renderRedList(); renderEquiposList();
-  updateTankSelectOptions();
-  showStep(1);
-}
-
-/* Init */
-function init(){
-  updateProgressUI();
-  renderTanks();
-  renderRedList();
-  renderEquiposList();
-  updateTankSelectOptions();
-  document.getElementById('finalGenerate').addEventListener('click', handleGenerate);
-}
-init();
-</script>
-
-<!-- === NUEVA INTERFAZ DE SUBIDA DE FOTOS === -->
-<div id="photoManager" style="background:#fff;padding:20px;border-radius:10px;margin-top:20px;box-shadow:0 0 10px rgba(0,0,0,0.1)">
-  <h2 style="color:#003366;text-align:center;">Gestión de Fotos</h2>
-  <p>Seleccione un subtítulo y suba la foto correspondiente.</p>
-  <select id="subtituloSelect" style="width:100%;padding:10px;border-radius:6px;margin-bottom:10px;"></select>
-  <input type="file" id="fotoInput" accept="image/*" style="width:100%;margin-bottom:10px;">
-  <button id="uploadBtn" style="background:#0056b3;color:white;padding:10px 15px;border:none;border-radius:6px;">Subir Foto</button>
-  <div id="statusArea" style="margin-top:20px;"></div>
-</div>
-
-<script>
-let fotos = {};
-let subtitulos = [];
-
-function cargarSubtitulos() {
-  // Obtener subtitulos generados desde el payload
-  const payload = buildPayload();
-  const accs = payload.accesoriosTanque || {};
-  subtitulos = [];
-  Object.keys(accs).forEach(tk=>{
-    Object.keys(accs[tk]).forEach(sub=>{
-      subtitulos.push(sub);
-    });
-  });
-  const select = document.getElementById('subtituloSelect');
-  select.innerHTML = '';
-  subtitulos.forEach(st=>{
-    const opt = document.createElement('option');
-    opt.value = st;
-    opt.textContent = st;
-    select.appendChild(opt);
-  });
-  mostrarEstado();
-}
-
-function mostrarEstado(){
-  const area = document.getElementById('statusArea');
-  area.innerHTML = '';
-  subtitulos.forEach(st=>{
-    const div = document.createElement('div');
-    div.style.padding='8px';
-    div.style.margin='5px 0';
-    div.style.borderRadius='6px';
-    div.style.background = fotos[st] ? '#d4edda' : '#f8d7da';
-    div.style.color = fotos[st] ? '#155724' : '#721c24';
-    div.textContent = `${st}: ${fotos[st] ? 'Foto subida ✔️' : 'Sin foto ❌'}`;
-    area.appendChild(div);
-  });
-}
-
-document.getElementById('uploadBtn').onclick=()=>{
-  const st = document.getElementById('subtituloSelect').value;
-  const file = document.getElementById('fotoInput').files[0];
-  if(!st||!file){alert('Seleccione subtítulo y archivo.');return;}
-  fotos[st]=file;
-  mostrarEstado();
-};
-
-async function generarInforme(){
-  const payload = buildPayload();
-  const formData = new FormData();
-  formData.append('payload', JSON.stringify(payload));
-  let i=0;
-  for(let k in fotos){
-    formData.append(`foto_${i}`, fotos[k]);
-    i++;
-  }
-  const res = await fetch('/generar',{method:'POST',body:formData});
-  if(res.ok){
-    const blob = await res.blob();
-    const link=document.createElement('a');
-    link.href=URL.createObjectURL(blob);
-    link.download='informe_generado.docx';
-    link.click();
-  }else alert('Error al generar informe');
-}
-
-/* -------------------------
-   STEP 7: Dynamic photo table (uses server-side blocks endpoint)
-   ------------------------- */
-
-let uploadedPhotos = {}; // internal mapping: clave -> [File, ...]
-let bloquesFotosCache = []; // array of {titulo, clave, fotos, aplica, order}
 
 /**
  * Request server to compute photo blocks based on current state (tanks, redes, equipos, accesorios)
- * We send a lightweight payload with the current arrays/state (serializable).
  */
 async function fetchBloquesFotos() {
-  // build payload from current frontend state variables (tanks, redes, equipos, accessoriesByTank, generalInfo)
+  document.getElementById('err-step-7').innerText = '';
   const payload = {
     generalInfo: generalInfo || {},
     tanks: tanks || [],
     accesoriosByTank: accessoriesByTank || {},
     redes: redes || [],
     equipos: equipos || [],
-    // observations are in obs_71..75 fields
     obs: {
       "7.1": document.getElementById('obs_71')?.value || '',
       "7.2": document.getElementById('obs_72')?.value || '',
@@ -1857,20 +1488,64 @@ async function fetchBloquesFotos() {
     });
     if(!res.ok) throw new Error('Error al solicitar bloques de fotos');
     const data = await res.json();
-    // data expected: [{titulo, clave, fotos, aplica, order}, ...]
-    bloquesFotosCache = data.sort((a,b)=> (a.order||0) - (b.order||0));
+    // expected: [{titulo, clave, fotos, aplica, order}, ...]
+    bloquesFotosCache = (Array.isArray(data) ? data : []).sort((a,b)=> (a.order||0) - (b.order||0));
+    // initialize uploadedPhotos entries for claves (if not already)
+    bloquesFotosCache.forEach(b => {
+      if(!uploadedPhotos[b.clave]) uploadedPhotos[b.clave] = [];
+    });
     buildPhotoTable();
   } catch(err) {
     console.error(err);
-    document.getElementById('err-step-7').innerText = 'No fue posible obtener la lista de fotos desde el servidor.';
+    // fallback: build local set of inputs based on frontend state (best-effort)
+    document.getElementById('err-step-7').innerText = 'No fue posible obtener la lista de fotos desde el servidor. Se muestran campos locales.';
+    buildLocalPhotoBlocksFallback();
   }
 }
 
 /**
- * Build the photo table UI inside #photoContainer using bloquesFotosCache.
- * The user sees only 'titulo' and count, not the internal 'clave'.
+ * Fallback: local table generation (best-effort) — mirrors earlier "buildPhotoFields" logic
  */
-function buildPhotoTable() {
+function buildLocalPhotoBlocksFallback(){
+  const localBlocks = [];
+  // Basic general blocks
+  localBlocks.push({titulo: '8. Evidencia fotográfica (del establecimiento) - Panorámica', clave: 'foto_8_1', fotos: 1, aplica: true, order: 1});
+  localBlocks.push({titulo: '9.1 FOTO PANORÁMICA DE LA ZONA', clave: 'foto_9_panoramica', fotos: 1, aplica: true, order: 2});
+
+  // Tanks
+  tanks.forEach((t, idx) => {
+    const i = idx+1;
+    const serie = safeVal(t.serie);
+    localBlocks.push({titulo: `PLACA DE TANQUE ${i} DE SERIE: ${serie}`, clave: `foto_9_placa_tank_${i}`, fotos:1, aplica:true, order: 10+i});
+    localBlocks.push({titulo: `FOTO PANORÁMICA DE ALREDEDORES DE TANQUE ${i}`, clave: `foto_9_panoramica_tank_${i}`, fotos:4, aplica:true, order: 20+i});
+    // a few other per-tank examples
+    for(let j=1;j<=5;j++){
+      localBlocks.push({titulo: `FOTO (ej.) tanque ${i} subtipo ${j}`, clave: `foto_9_tank${i}_${j}`, fotos:1, aplica:true, order:30 + i*10 + j});
+    }
+    // trabajos antes/después
+    localBlocks.push({titulo: `10. Trabajos - Tanque ${i} (ANTES) - Serie ${serie}`, clave:`foto_10_tank${i}__1`, fotos:1, aplica:true, order:200+i});
+    localBlocks.push({titulo: `10. Trabajos - Tanque ${i} (DESPUÉS) - Serie ${serie}`, clave:`foto_10_tank${i}__2`, fotos:1, aplica:true, order:210+i});
+  });
+
+  // Equipos placeholders
+  Object.keys(estructuraEquipos).forEach(tipo=>{
+    localBlocks.push({titulo:`FOTO DE PLACA DE ${tipo.toUpperCase()}`, clave:`foto_9_${tipo}_placa_1`, fotos:1, aplica:true, order:400});
+    localBlocks.push({titulo:`FOTO DE ${tipo.toUpperCase()} (general)`, clave:`foto_9_${tipo}_general_1`, fotos:1, aplica:true, order:410});
+  });
+
+  // red examples
+  localBlocks.push({titulo:'FOTO DE ZONA MEDIDORES', clave:'foto_9_zona_medidores', fotos:1, aplica:true, order:500});
+
+  bloquesFotosCache = localBlocks;
+  bloquesFotosCache.forEach(b => { if(!uploadedPhotos[b.clave]) uploadedPhotos[b.clave] = []; });
+  buildPhotoTable();
+}
+
+/**
+ * Build the photo table UI inside #photoContainer using bloquesFotosCache.
+ * Adds small inline preview thumbnails and file inputs (hidden).
+ */
+function buildPhotoTable(){
   const container = document.getElementById('photoContainer');
   container.innerHTML = '';
   if(!bloquesFotosCache || !bloquesFotosCache.length) {
@@ -1882,7 +1557,13 @@ function buildPhotoTable() {
   table.className = 'photo-table';
 
   const thead = document.createElement('thead');
-  thead.innerHTML = `<tr><th>Subtítulo</th><th style="width:120px">N° Fotos</th><th style="width:120px">Estado</th><th style="width:200px">Acción</th></tr>`;
+  thead.innerHTML = `<tr>
+    <th>Subtítulo</th>
+    <th style="width:120px">N° Fotos</th>
+    <th style="width:180px">Previews</th>
+    <th style="width:120px">Estado</th>
+    <th style="width:260px">Acción</th>
+  </tr>`;
   table.appendChild(thead);
 
   const tbody = document.createElement('tbody');
@@ -1891,29 +1572,40 @@ function buildPhotoTable() {
     const tr = document.createElement('tr');
     if(!block.aplica) tr.classList.add('disabled');
 
-    // Title cell (human friendly)
+    // Title
     const tdTitle = document.createElement('td');
     const titleDiv = document.createElement('div');
     titleDiv.className = 'photo-row-title';
     titleDiv.innerText = block.titulo;
     const subDiv = document.createElement('div');
     subDiv.className = 'photo-row-sub';
-    subDiv.innerText = ''; // reserved for extra info if needed
+    subDiv.innerText = `Clave: ${block.clave}`;
     tdTitle.appendChild(titleDiv);
     tdTitle.appendChild(subDiv);
 
-    // Count cell
+    // Count
     const tdCount = document.createElement('td');
     tdCount.innerHTML = `<div class="photo-count">${block.fotos} foto(s)</div>`;
 
-    // Status cell
+    // Previews cell
+    const tdPreview = document.createElement('td');
+    tdPreview.style.whiteSpace = 'nowrap';
+    tdPreview.dataset.clave = block.clave;
+    // create a placeholder area for thumbs
+    const thumbsWrap = document.createElement('div');
+    thumbsWrap.style.display = 'flex';
+    thumbsWrap.style.alignItems = 'center';
+    thumbsWrap.style.gap = '6px';
+    tdPreview.appendChild(thumbsWrap);
+
+    // Status
     const tdStatus = document.createElement('td');
     const badge = document.createElement('span');
     badge.className = 'badge-state badge-red';
     badge.innerText = 'Sin subir';
     tdStatus.appendChild(badge);
 
-    // Action cell: file input (hidden) + button(s)
+    // Actions
     const tdAction = document.createElement('td');
     tdAction.className = 'photo-action';
 
@@ -1927,16 +1619,18 @@ function buildPhotoTable() {
     input.addEventListener('change', (ev)=>{
       const files = Array.from(ev.target.files || []);
       if(files.length === 0) return;
-      // enforce max count
       if(block.fotos && files.length > block.fotos) {
         alert(`Se permiten máximo ${block.fotos} fotos para este subtítulo.`);
         return;
       }
+      // store files
       uploadedPhotos[block.clave] = files;
-      updatePhotoRowStatus(block.clave, tr, badge, block.fotos);
+      // update thumbnails
+      renderThumbsForClave(block.clave);
+      updatePhotoRowStatus(block.clave, badge, block.fotos, tr);
     });
 
-    // Upload / View button
+    // button select/upload
     const btn = document.createElement('button');
     btn.className = 'btn small primary';
     btn.type = 'button';
@@ -1947,7 +1641,7 @@ function buildPhotoTable() {
       input.click();
     });
 
-    // View uploaded (if any)
+    // view - open each in new tab
     const btnView = document.createElement('button');
     btnView.className = 'btn small ghost';
     btnView.type = 'button';
@@ -1956,26 +1650,45 @@ function buildPhotoTable() {
     btnView.addEventListener('click', ()=>{
       const files = uploadedPhotos[block.clave] || [];
       if(!files.length){ alert('No hay imágenes para ver.'); return; }
-      // open each image in new tab (create object URL)
       files.forEach(f=>{
         const url = URL.createObjectURL(f);
         window.open(url);
       });
     });
 
+    // remove button
+    const btnRemove = document.createElement('button');
+    btnRemove.className = 'btn small danger';
+    btnRemove.type = 'button';
+    btnRemove.innerText = 'Eliminar';
+    btnRemove.disabled = true;
+    btnRemove.addEventListener('click', ()=>{
+      if(!confirm('Eliminar las fotos subidas para este subtítulo?')) return;
+      delete uploadedPhotos[block.clave];
+      renderThumbsForClave(block.clave);
+      updatePhotoRowStatus(block.clave, badge, block.fotos, tr);
+    });
+
+    // append action elements
     tdAction.appendChild(input);
     tdAction.appendChild(btn);
     tdAction.appendChild(btnView);
+    tdAction.appendChild(btnRemove);
 
+    // assemble row
     tr.appendChild(tdTitle);
     tr.appendChild(tdCount);
+    tr.appendChild(tdPreview);
     tr.appendChild(tdStatus);
     tr.appendChild(tdAction);
 
+    // keep reference data attributes
     tr.dataset.clave = block.clave;
     tbody.appendChild(tr);
 
-    updatePhotoRowStatus(block.clave, tr, badge, block.fotos, btnView);
+    // If any files previously uploaded for this clave, show them
+    renderThumbsForClave(block.clave);
+    updatePhotoRowStatus(block.clave, badge, block.fotos, tr);
   });
 
   table.appendChild(tbody);
@@ -1983,60 +1696,123 @@ function buildPhotoTable() {
 }
 
 /**
- * Update the badge and enable/disable 'Ver' button depending on uploadedPhotos[clave]
+ * Render thumbnail images for a given clave inside the table row
  */
-function updatePhotoRowStatus(clave, trElem, badgeElem, fotosNecesarias, btnViewElem) {
+function renderThumbsForClave(clave){
+  const area = document.querySelector(`#photoContainer td[data-clave="${clave}"]`);
+  // When table built, the preview td has data-clave attribute; if not found, attempt search
+  let thumbsWrap = null;
+  if(area){
+    thumbsWrap = area.querySelector('div');
+  } else {
+    // search any td matching clave
+    const tds = document.querySelectorAll('#photoContainer td');
+    for(const td of tds){
+      if(td.dataset && td.dataset.clave === clave){
+        thumbsWrap = td.querySelector('div');
+        break;
+      }
+    }
+  }
+  if(!thumbsWrap) {
+    // could be that table not yet built; skip
+    return;
+  }
+  // clear current thumbs
+  thumbsWrap.innerHTML = '';
+  const files = uploadedPhotos[clave] || [];
+  if(!files.length){
+    // show placeholder small text
+    const ph = document.createElement('div');
+    ph.className = 'small-muted';
+    ph.innerText = '—';
+    thumbsWrap.appendChild(ph);
+    // update associated action buttons (enable/disable)
+    const row = document.querySelector(`#photoContainer tr[data-clave="${clave}"]`);
+    if(row){
+      const btns = row.querySelectorAll('button');
+      btns.forEach(b=>{
+        if(b.innerText === 'Ver' || b.innerText === 'Eliminar') b.disabled = true;
+      });
+    }
+    return;
+  }
+  // create thumb images
+  files.forEach(f=>{
+    const img = document.createElement('img');
+    img.className = 'preview-thumb';
+    img.alt = f.name;
+    img.src = URL.createObjectURL(f);
+    // Revoke object URL later when not needed — acceptable here for preview; will be revoked on download or removal
+    img.addEventListener('load', ()=>{ /* keep it */ });
+    thumbsWrap.appendChild(img);
+  });
+  // enable view/remove buttons in row
+  const row = document.querySelector(`#photoContainer tr[data-clave="${clave}"]`);
+  if(row){
+    const btns = row.querySelectorAll('button');
+    btns.forEach(b=>{
+      if(b.innerText === 'Ver' || b.innerText === 'Eliminar') b.disabled = false;
+    });
+  }
+}
+
+/**
+ * Update the badge and enable/disable 'Ver' and 'Eliminar' depending on uploadedPhotos[clave]
+ */
+function updatePhotoRowStatus(clave, badgeElem, fotosNecesarias, trElem) {
   const files = uploadedPhotos[clave] || [];
   const n = files.length;
   const badge = badgeElem;
-  const btnView = btnViewElem || trElem.querySelector('button.ghost');
+  const row = trElem;
   if(n === 0) {
     badge.className = 'badge-state badge-red';
     badge.innerText = 'Sin subir';
-    if(btnView) btnView.disabled = true;
+    if(row){
+      row.querySelectorAll('button').forEach(b => {
+        if(b.innerText === 'Ver' || b.innerText === 'Eliminar') b.disabled = true;
+      });
+    }
   } else if(fotosNecesarias && n < fotosNecesarias) {
     badge.className = 'badge-state badge-yellow';
     badge.innerText = `${n}/${fotosNecesarias}`;
-    if(btnView) btnView.disabled = false;
+    if(row){
+      row.querySelectorAll('button').forEach(b => {
+        if(b.innerText === 'Ver' || b.innerText === 'Eliminar') b.disabled = false;
+      });
+    }
   } else {
     badge.className = 'badge-state badge-green';
     badge.innerText = fotosNecesarias ? `${n}/${fotosNecesarias}` : `${n}`;
-    if(btnView) btnView.disabled = false;
+    if(row){
+      row.querySelectorAll('button').forEach(b => {
+        if(b.innerText === 'Ver' || b.innerText === 'Eliminar') b.disabled = false;
+      });
+    }
   }
 }
 
 /**
  * When entering step 7, call fetchBloquesFotos automatically.
- * We override showStep to call this when n === 7 (already in code but ensure call)
+ * We override showStep below to call fetchBloquesFotos when n === 7.
  */
-const originalShowStep = showStep;
-showStep = function(n){
-  currentStep = n;
-  for (let i=1;i<=TOTAL_STEPS;i++){
-    const stepEl = document.getElementById(`step-${i}`);
-    if(stepEl) stepEl.classList.remove('active');
-    const nav = document.querySelector(`.nav-item[data-step="${i}"]`);
-    if(nav) nav.classList.remove('active');
-  }
-  const target = document.getElementById(`step-${n}`);
-  if(target){
-    target.classList.add('active');
-    // if step 7, fetch blocks from server
-    if(n === 7) fetchBloquesFotos();
-  }
-  const navActive = document.querySelector(`.nav-item[data-step="${n}"]`);
-  if(navActive) navActive.classList.add('active');
-  updateProgressUI();
-}
+
+/* -------------------------
+   Final Word generation with photos
+   ------------------------- */
 
 /**
- * Handler to send the final FormData to the server to generate the DOCX
- * It will send a 'payload' field (JSON) with the current form state and append files using the internal claves.
+ * Collect payload & uploadedPhotos -> FormData -> POST to server endpoint
+ * We will append files using their claves. If multiple files for a clave, append as clave__1, clave__2 etc.
  */
 async function generateWordWithPhotos(e){
-  e.preventDefault();
+  e && e.preventDefault && e.preventDefault();
   document.getElementById('err-step-7').innerText = '';
-  // Build payload similar to fetchBloquesFotos
+  // validate previous steps
+  for(let i=1;i<=6;i++){
+    if(!validateStep(i)){ showStep(i); return; }
+  }
+
   const payload = {
     generalInfo: generalInfo || {},
     tanks: tanks || [],
@@ -2060,7 +1836,6 @@ async function generateWordWithPhotos(e){
     const files = uploadedPhotos[clave];
     if(Array.isArray(files)){
       for(let i=0;i<files.length;i++){
-        // use same clave or clave__1, clave__2 for multiple
         const key = (files.length>1) ? `${clave}__${i+1}` : clave;
         form.append(key, files[i], files[i].name);
       }
@@ -2068,36 +1843,109 @@ async function generateWordWithPhotos(e){
   }
 
   try {
+    const btn = document.getElementById('finalGenerate');
+    btn.disabled = true;
+    btn.innerText = 'Generando...';
+
     const res = await fetch('/generate_docx', {
       method: 'POST',
       body: form
     });
     if(!res.ok) {
-      const txt = await res.text();
-      throw new Error('Error en el servidor: '+txt);
+      const txt = await res.text().catch(()=>null);
+      throw new Error('Error en el servidor: '+ (txt || res.statusText));
     }
     const blob = await res.blob();
-    const filename = res.headers.get('Content-Disposition')?.split('filename=')[1] || 'informe.docx';
+    // Try to extract filename from headers
+    let filename = 'informe.docx';
+    const disp = res.headers.get('Content-Disposition') || res.headers.get('content-disposition') || '';
+    const fnMatch = /filename\*=UTF-8''(.+)|filename="?(.+)"?/.exec(disp);
+    if(fnMatch){
+      filename = decodeURIComponent(fnMatch[1] || fnMatch[2] || filename);
+    }
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = filename.replace(/"/g,'');
+    a.download = filename;
     document.body.appendChild(a);
     a.click();
     a.remove();
     window.URL.revokeObjectURL(url);
+    btn.disabled = false;
+    btn.innerText = 'Generar Word →';
+    alert('Informe generado y descargado.');
   } catch(err) {
     console.error(err);
-    document.getElementById('err-step-7').innerText = 'Error generando el Word: ' + err.message;
+    document.getElementById('err-step-7').innerText = 'Error generando el Word: ' + (err.message || err);
+    const btn = document.getElementById('finalGenerate');
+    btn.disabled = false;
+    btn.innerText = 'Generar Word →';
   }
 }
 
+/* -------------------------
+   showStep override (single implementation)
+   ------------------------- */
+function showStep(n){
+  currentStep = n;
+  for (let i=1;i<=TOTAL_STEPS;i++){
+    const stepEl = document.getElementById(`step-${i}`);
+    if(stepEl) stepEl.classList.remove('active');
+    const nav = document.querySelector(`.nav-item[data-step="${i}"]`);
+    if(nav) nav.classList.remove('active');
+  }
+  const target = document.getElementById(`step-${n}`);
+  if(target){
+    target.classList.add('active');
+    // if step 7, fetch blocks from server (or fallback)
+    if(n === 7) fetchBloquesFotos();
+  }
+  const navActive = document.querySelector(`.nav-item[data-step="${n}"]`);
+  if(navActive) navActive.classList.add('active');
+  updateProgressUI();
+}
+
+/* -------------------------
+   Bind buttons & reset
+   ------------------------- */
+document.getElementById('btnGenerate').addEventListener('click', () => {
+  showStep(7);
+});
+document.getElementById('downloadTemplateBtn').addEventListener('click', () => {
+  alert('La plantilla ahora no se descarga; usa el formulario para generar el informe.');
+});
+
 document.getElementById('finalGenerate').addEventListener('click', generateWordWithPhotos);
 
+/* Reset */
+function resetApp(){
+  if(!confirm('Reiniciar todos los datos?')) return;
+  generalInfo = {};
+  tanks = [];
+  accessoriesByTank = {};
+  redes = [];
+  equipos = [];
+  zona_medidores_val = null;
+  uploadedPhotos = {};
+  bloquesFotosCache = [];
+  document.querySelectorAll('input[type=text], input[type=email], input[type=number], textarea').forEach(i => i.value = '');
+  document.querySelectorAll('select').forEach(s => s.value = '');
+  renderTanks(); renderAccList(''); renderRedList(); renderEquiposList();
+  updateTankSelectOptions();
+  showStep(1);
+}
+
+/* Init */
+function init(){
+  updateProgressUI();
+  renderTanks();
+  renderRedList();
+  renderEquiposList();
+  updateTankSelectOptions();
+}
+init();
+
 </script>
-<!-- === FIN NUEVA INTERFAZ DE SUBIDA DE FOTOS === -->
 
 </body>
 </html>
-
-
