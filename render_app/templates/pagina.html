@@ -1,338 +1,220 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF-8" />
     <title>Generador de Informes - Futurista</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <style>
         /* ======================== */
         /*   ESTILO GLOBAL FUTURISTA  */
         /* ======================== */
 
-        body {
-            margin: 0;
-            padding: 0;
-            background: #0c0f1a;
-            font-family: "Segoe UI", sans-serif;
-            color: #e5e7eb;
-            overflow-x: hidden;
+        :root{
+            --bg:#0c0f1a;
+            --panel-bg: rgba(255,255,255,0.03);
+            --accent:#4ea8de;
+            --muted:#9db4d0;
+            --glass-border: rgba(78,168,222,0.3);
         }
 
-        h1, h2, h3, h4 {
-            font-weight: 600;
+        html,body{
+            height:100%;
+            margin:0;
+            padding:0;
+            background:var(--bg);
+            font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            color:#e5e7eb;
+            -webkit-font-smoothing:antialiased;
+            -moz-osx-font-smoothing:grayscale;
         }
 
-        h1 {
-            text-align: center;
-            margin-top: 25px;
-            font-size: 30px;
-            color: #4ea8de;
-            letter-spacing: 1px;
-            text-shadow: 0px 0px 8px #3ea1db;
+        h1{ text-align:center; margin-top:24px; color:var(--accent); font-size:28px; letter-spacing:1px; text-shadow:0 0 8px rgba(62,161,219,0.18); }
+        h2{ color:var(--accent); margin:0 0 12px 0; font-size:18px; }
+
+        .container{
+            width:95%;
+            max-width:1200px;
+            margin:20px auto 80px;
         }
 
-        .container {
-            width: 95%;
-            max-width: 1300px;
-            margin: auto;
-            padding-bottom: 50px;
-            margin-top: 20px;
+        .panel{
+            background: var(--panel-bg);
+            padding:20px;
+            border-radius:12px;
+            margin-bottom:18px;
+            border:1px solid var(--glass-border);
+            box-shadow: 0 0 8px rgba(78,168,222,0.12);
         }
 
-        /* ======================== */
-        /*   TARJETAS / PANELS       */
-        /* ======================== */
-
-        .panel {
-            background: rgba(255, 255, 255, 0.03);
-            padding: 25px;
-            border-radius: 12px;
-            margin-top: 25px;
-            border: 1px solid rgba(78, 168, 222, 0.3);
-            box-shadow: 0px 0px 8px rgba(78, 168, 222, 0.25);
-        }
-
-        .panel h2 {
-            color: #4ea8de;
-            margin-bottom: 15px;
-        }
-
-        /* ======================== */
-        /*   INPUTS FUTURISTAS       */
-        /* ======================== */
-
-        .form-row {
-            margin-bottom: 15px;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .form-row label {
-            margin-bottom: 5px;
-            font-size: 14px;
-            color: #9db4d0;
-        }
-
-        .form-row input,
-        .form-row select,
-        .form-row textarea {
-            background: rgba(255, 255, 255, 0.09);
-            border: 1px solid rgba(78, 168, 222, 0.3);
-            padding: 10px;
-            color: white;
-            border-radius: 8px;
-        }
-
-        textarea {
-            resize: vertical;
-            min-height: 90px;
-        }
-
-        /* ======================== */
-        /*   BOTONES FUTURISTAS      */
-        /* ======================== */
-
-        button {
-            border: none;
-            padding: 10px 15px;
-            background: #4ea8de;
-            color: white;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-
-        button:hover {
-            background: #3b8fc0;
-            transform: scale(1.03);
-        }
-
-        .btn-danger {
-            background: #d9534f;
-        }
-        .btn-danger:hover {
-            background: #c0392b;
-        }
-
-        .btn-add {
-            background: #5cb85c;
-        }
-        .btn-add:hover {
-            background: #4cae4c;
-        }
-
-        /* ======================== */
-        /*    BLOQUES DE TANQUES     */
-        /* ======================== */
-
-        .tank-block,
-        .equip-block,
-        .acc-block,
-        .red-block {
-            padding: 18px;
-            border-radius: 10px;
+        .form-row{ margin-bottom:12px; display:flex; flex-direction:column; }
+        .form-row label{ color:var(--muted); font-size:13px; margin-bottom:6px; }
+        .form-row input, .form-row select, .form-row textarea {
             background: rgba(255,255,255,0.05);
-            margin-bottom: 15px;
-            border-left: 4px solid #4ea8de;
+            border:1px solid rgba(255,255,255,0.04);
+            padding:10px;
+            color:#fff;
+            border-radius:8px;
+            font-size:14px;
+        }
+        .form-row textarea{ min-height:90px; resize:vertical; }
+
+        button{
+            border:none;
+            padding:10px 14px;
+            background:var(--accent);
+            color:#fff;
+            border-radius:8px;
+            cursor:pointer;
+            transition:all .16s ease;
+        }
+        button:hover{ transform:translateY(-2px); }
+        .btn-danger{ background:#d9534f; }
+        .btn-add{ background:#5cb85c; }
+
+        .tank-block, .equip-block, .acc-block, .red-block{
+            padding:14px;
+            border-radius:10px;
+            background: rgba(255,255,255,0.02);
+            margin-bottom:10px;
+            border-left:4px solid var(--accent);
         }
 
-        /* ======================== */
-        /*      GRID DE IMÁGENES     */
-        /* ======================== */
+        .images-grid{
+            display:grid;
+            grid-template-columns: repeat(auto-fill,minmax(140px,1fr));
+            gap:10px;
+        }
+        .img-preview{ position:relative; border-radius:8px; overflow:hidden; border:1px solid rgba(255,255,255,0.08); }
+        .img-preview img{ width:100%; height:110px; object-fit:cover; display:block; }
+        .delete-img{ position:absolute; top:6px; right:6px; background:rgba(220,38,38,0.95); color:#fff; border-radius:50%; width:28px; height:28px; border:none; cursor:pointer; }
 
-        .images-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-            gap: 12px;
+        .foto-slot{ margin-bottom:16px; padding:12px; border-left:3px solid var(--accent); border-radius:8px; background: rgba(255,255,255,0.01); }
+        .slot-upload-row{ display:flex; gap:12px; flex-wrap:wrap; }
+        .slot-upload{
+            border:1px dashed rgba(255,255,255,0.08);
+            padding:10px;
+            border-radius:8px;
+            width:180px;
+            text-align:center;
+            cursor:pointer;
+            background: rgba(255,255,255,0.01);
+        }
+        .slot-upload:hover{ border-color:var(--accent); background: rgba(255,255,255,0.02); }
+        .slot-upload input{ display:none; }
+        .slot-title{ font-size:13px; color:var(--muted); }
+
+        .activity-block{ padding:12px; border:1px solid rgba(255,255,255,0.04); border-radius:10px; margin-top:10px; background: rgba(255,255,255,0.01); }
+        .activity-title{ color:#9fc5f8; font-size:14px; margin-bottom:8px; }
+
+        @media (max-width:780px){
+            .container{ padding:10px; }
+            .slot-upload{ width:48%; }
         }
 
-        .img-preview {
-            position: relative;
-            border-radius: 10px;
-            overflow: hidden;
-            border: 1px solid rgba(255,255,255,0.2);
-        }
-
-        .img-preview img {
-            width: 100%;
-            height: 110px;
-            object-fit: cover;
-            display: block;
-        }
-
-        .delete-img {
-            position: absolute;
-            top: 5px;
-            right: 5px;
-            background: rgba(220,38,38,0.9);
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 26px;
-            height: 26px;
-            font-size: 16px;
-            line-height: 26px;
-            text-align: center;
-            cursor: pointer;
-        }
-
-        /* ======================== */
-        /* PANEL FOTOS DINÁMICAS     */
-        /* ======================== */
-
-        .foto-slot {
-            margin-bottom: 22px;
-            padding: 15px;
-            border-left: 3px solid #4ea8de;
-            background: rgba(255,255,255,0.03);
-            border-radius: 10px;
-        }
-
-        .foto-slot h3 {
-            margin-bottom: 10px;
-            color: #74c0fc;
-        }
-
-        .slot-upload-row {
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-        }
-
-        .slot-upload {
-            border: 1px dashed rgba(255,255,255,0.3);
-            padding: 12px;
-            border-radius: 8px;
-            width: 180px;
-            text-align: center;
-            cursor: pointer;
-            transition: .2s;
-        }
-
-        .slot-upload:hover {
-            border-color: #4ea8de;
-            background: rgba(255,255,255,0.06);
-        }
-
-        .slot-upload input {
-            display: none;
-        }
-
-        .slot-title {
-            font-size: 13px;
-            color: #a8c6dd;
-        }
-
-        .activity-block {
-            padding: 15px;
-            border: 1px solid rgba(255,255,255,0.15);
-            border-radius: 10px;
-            margin-top: 12px;
-        }
-
-        .activity-title {
-            color: #9fc5f8;
-            font-size: 15px;
-            margin-bottom: 10px;
-        }
     </style>
 </head>
-
 <body>
-
     <h1>GENERADOR AUTOMÁTICO DE INFORMES</h1>
 
     <div class="container">
 
-        <!-- PANEL INICIAL -->
-        <section class="panel">
-            <h2>1. Datos del Cliente</h2>
+        <!-- PANEL: DATOS DEL CLIENTE -->
+        <section class="panel" id="panel-general">
+            <h2>1. Información del Cliente</h2>
 
             <div class="form-row">
                 <label>Nombre o razón social del cliente:</label>
-                <input type="text" id="c_nombre" required>
+                <input type="text" id="c_nombre" />
             </div>
 
             <div class="form-row">
                 <label>Fecha de inspección:</label>
-                <input type="date" id="c_fecha" required>
+                <input type="date" id="c_fecha" />
             </div>
 
             <div class="form-row">
                 <label>Dirección:</label>
-                <input type="text" id="c_direccion" required>
+                <input type="text" id="c_direccion" />
             </div>
 
-            <div class="form-row">
-                <label>RUC o DNI:</label>
-                <input type="text" id="c_doc" required>
+            <div class="form-row" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+                <div>
+                    <label>RUC o DNI:</label>
+                    <input type="text" id="c_doc" />
+                </div>
+                <div>
+                    <label>Número de instalación:</label>
+                    <input type="text" id="c_instalacion" />
+                </div>
+                <div>
+                    <label>Distrito:</label>
+                    <input type="text" id="c_distrito" />
+                </div>
             </div>
 
-            <div class="form-row">
-                <label>Número de instalación:</label>
-                <input type="text" id="c_instalacion" required>
+            <div class="form-row" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px">
+                <div>
+                    <label>Departamento:</label>
+                    <input type="text" id="c_departamento" />
+                </div>
+                <div>
+                    <label>Coordenadas:</label>
+                    <input type="text" id="c_coordenadas" />
+                </div>
+                <div>
+                    <label>Nombre del contacto:</label>
+                    <input type="text" id="c_contacto" />
+                </div>
             </div>
 
-            <div class="form-row">
-                <label>Distrito:</label>
-                <input type="text" id="c_distrito" required>
-            </div>
-
-            <div class="form-row">
-                <label>Departamento:</label>
-                <input type="text" id="c_departamento" required>
-            </div>
-
-            <div class="form-row">
-                <label>Coordenadas:</label>
-                <input type="text" id="c_coordenadas" required>
-            </div>
-
-            <div class="form-row">
-                <label>Nombre de contacto:</label>
-                <input type="text" id="c_contacto" required>
-            </div>
-
-            <div class="form-row">
-                <label>Número del contacto:</label>
-                <input type="text" id="c_num_contacto" required>
-            </div>
-
-            <div class="form-row">
-                <label>Correo del contacto:</label>
-                <input type="email" id="c_correo" required>
+            <div class="form-row" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:12px">
+                <div>
+                    <label>Número del contacto:</label>
+                    <input type="text" id="c_num_contacto" />
+                </div>
+                <div>
+                    <label>Correo del contacto:</label>
+                    <input type="email" id="c_correo" />
+                </div>
             </div>
         </section>
-		<!-- PANEL DE TANQUES -->
+
+        <!-- PANEL DE TANQUES -->
         <section class="panel" id="panel-tanques">
             <h2>2. Tanques inspeccionados</h2>
 
             <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px">
                 <button class="btn-add" id="btnAddTank">+ Agregar Tanque</button>
-                <div style="color:#9db4d0;font-size:13px">Agrega tantos tanques como existan en la instalación.</div>
+                <div style="color:var(--muted);font-size:13px">Agrega tantos tanques como existan en la instalación.</div>
             </div>
 
-            <div id="lista-tanques"></div>
+            <div id="lista-tanques">
+                <!-- bloques de tanque generados por JS -->
+            </div>
         </section>
 
         <!-- ACCESORIOS POR TANQUE -->
         <section class="panel" id="panel-accesorios-tanque">
             <h2>3. Accesorios por tanque</h2>
-            <div style="color:#9db4d0;margin-bottom:10px">Selecciona el tanque y completa los accesorios (Marca, Código, Serie, Mes/Año).</div>
+            <div style="color:var(--muted);margin-bottom:10px">Selecciona el tanque para editar accesorios (Marca, Código, Serie, Mes/Año).</div>
             <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px">
-                <label style="color:#a8c6dd">Tanque seleccionado:</label>
+                <label style="color:var(--muted)">Tanque seleccionado:</label>
                 <select id="selectTanqueForAcc"></select>
             </div>
-            <div id="accesorios-tanque-contenedor"></div>
+            <div id="accesorios-tanque-contenedor">
+                <!-- formulario accesorios por tanque -->
+            </div>
         </section>
 
         <!-- ACCESORIOS EN RED -->
         <section class="panel" id="panel-accesorios-red">
             <h2>4. Accesorios en la red</h2>
-            <div style="color:#9db4d0;margin-bottom:10px">Agrega accesorios encontrados en las redes (Tipo, Marca, Serie, Código, Mes/Año).</div>
+            <div style="color:var(--muted);margin-bottom:10px">Agrega accesorios encontrados en la red (Tipo, Marca, Serie, Código, Mes/Año).</div>
 
-            <div id="lista-accesorios-red"></div>
+            <div id="lista-accesorios-red">
+                <!-- items añadidos por JS -->
+            </div>
 
             <div style="margin-top:10px">
                 <button id="btnAddAccRed" class="btn">+ Agregar accesorio en red</button>
@@ -342,9 +224,11 @@
         <!-- EQUIPOS -->
         <section class="panel" id="panel-equipos">
             <h2>5. Equipos de la instalación</h2>
-            <div style="color:#9db4d0;margin-bottom:10px">Agrega equipos (vaporizador, quemador, decantador, etc.).</div>
+            <div style="color:var(--muted);margin-bottom:10px">Añade equipos (vaporizador, quemador, decantador, etc.).</div>
 
-            <div id="lista-equipos"></div>
+            <div id="lista-equipos">
+                <!-- items añadidos por JS -->
+            </div>
 
             <div style="margin-top:10px">
                 <button id="btnAddEquipo" class="btn">+ Agregar equipo</button>
@@ -376,585 +260,434 @@
             </div>
 
             <div class="form-row">
-                <label>7.5 Observaciones en equipos varios (separadas por punto)</label>
-                <textarea id="obs_7_5" placeholder="Separar observaciones por punto con punto."></textarea>
+                <label>7.5 Observaciones en equipos varios (separar por punto con '.')</label>
+                <textarea id="obs_7_5" placeholder="Ejemplo: Vaporizador en mal estado. Quemador necesita ajuste."></textarea>
             </div>
         </section>
 
-        <!-- PASO 7: FOTOS Y ACTIVIDADES (UI futurista) -->
-        <section class="panel" id="panel-fotos-actividades">
-            <h2>7. Fotos & Actividades (Antes / Después)</h2>
-            <div style="color:#9db4d0;margin-bottom:10px">Pulsa "Cargar subtítulos" para obtener los lugares donde puedes subir fotos. Luego agrega actividades en los 10.x y sube foto Antes/Después por actividad.</div>
-
-            <div style="display:flex;gap:12px;margin-bottom:12px">
-                <button id="btnLoadSlots" class="btn">Cargar subtítulos (desde servidor)</button>
-                <button id="btnClearPhotos" class="btn btn-danger">Borrar fotos cargadas</button>
-                <div style="flex:1"></div>
-                <button id="btnGenerate" class="btn">Generar Word →</button>
+        <!-- PANEL DINÁMICO: SLOTS DE FOTOS 9.x -->
+        <section class="panel" id="panel-fotos">
+            <h2>7. Evidencia Fotográfica (9.x)</h2>
+            <div style="color:var(--muted);margin-bottom:10px">
+                Los subtítulos que requieren fotos serán generados automáticamente según los tanques,
+                equipos y accesorios enviados.  
+                <br>Los recuadros aparecerán aquí para que subas fotos JPG/PNG.
             </div>
 
-            <div id="slots-container"></div>
-
-            <hr style="border:1px dashed rgba(255,255,255,0.06);margin:18px 0">
-
-            <h3 style="color:#4ea8de">Actividades 10.x (por tanque y redes)</h3>
-            <div id="actividades-container"></div>
-
+            <div id="containerSlotsFotos">
+                <!-- Aquí JS insertará los bloques 9.x -->
+            </div>
         </section>
 
-        <!-- FOOTER CONTROLES -->
-        <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:18px">
-            <button id="btnExport" class="btn">Guardar borrador (local)</button>
-            <button id="btnLoad" class="btn">Cargar borrador</button>
-            <button id="btnReset" class="btn btn-danger">Reiniciar formulario</button>
-        </div>
+        <!-- PANEL: ACTIVIDADES (10.x) -->
+        <section class="panel" id="panel-actividades">
+            <h2>8. Evidencia de Mantenimiento (10.x)</h2>
+            <div style="color:var(--muted);margin-bottom:10px">
+                Para cada tanque y para las redes de llenado/retorno y consumo, podrás agregar
+                las actividades realizadas y subir fotos del <b>ANTES</b> y <b>DESPUÉS</b>.
+            </div>
+
+            <div id="containerActividades">
+                <!-- JS insertará dinámicamente los bloques 10.1 ... 10.N -->
+            </div>
+        </section>
+
+        <!-- BOTÓN FINAL PARA GENERAR DOCUMENTO -->
+        <section class="panel">
+            <h2>Generar Informe</h2>
+            <button id="btnGenerarDoc" style="width:100%;padding:16px;font-size:16px">
+                GENERAR DOCUMENTO WORD
+            </button>
+            <div id="estadoGeneracion" style="margin-top:12px;color:var(--muted);font-size:14px"></div>
+        </section>
 
     </div>
 
-    <!-- ========================= -->
-    <!--    SCRIPTS PRINCIPALES    -->
-    <!-- ========================= -->
+    <!-- ============================== -->
+    <!--     SCRIPTS PRINCIPALES        -->
+    <!-- ============================== -->
+
     <script>
-        /* =========================
-           ESTADO GLOBAL
-           ========================= */
-        const state = {
-            general: {},
-            tanques: [],           // cada tanque: {serie, capacidad, anio, tipo, fabricante, porcentaje}
-            accesoriosByTank: {},  // key: indiceTanque (1-based) -> { "Válvula de llenado": {...}, ... }
-            accesoriosRed: [],     // lista de {Tipo, Marca, Serie, Código, "Mes/Año de fabricación"}
-            equipos: [],           // lista de objetos
-            observaciones: {},     // { "7.1": "...", ... }
-            slots: [],             // slots obtenidos del backend
-            uploadedPhotos: {},    // key slotId -> { images: [File,...], activities:{ idx:{antes:File,despues:File}}}
-            actividades: {}        // key "10.x" -> [ {descripcion: "..."} ]
-        };
+        /* ======================================================= */
+        /*  UTILIDADES GENERALES                                  */
+        /* ======================================================= */
 
-        /* =========================
-           UTILIDADES
-           ========================= */
-        function q(selector){ return document.querySelector(selector); }
-        function qAll(selector){ return document.querySelectorAll(selector); }
-
-        function saveDraft(){
-            const draft = {
-                general: state.general,
-                tanques: state.tanques,
-                accesoriosByTank: state.accesoriosByTank,
-                accesoriosRed: state.accesoriosRed,
-                equipos: state.equipos,
-                observaciones: state.observaciones,
-                actividades: state.actividades
-            };
-            localStorage.setItem("informe_solgas_v1", JSON.stringify(draft));
-            alert("Borrador guardado localmente.");
+        function createElement(html){
+            const div = document.createElement("div");
+            div.innerHTML = html.trim();
+            return div.firstChild;
         }
 
-        function loadDraft(){
-            const raw = localStorage.getItem("informe_solgas_v1");
-            if(!raw){ alert("No hay borrador guardado."); return; }
-            const d = JSON.parse(raw);
-            Object.assign(state.general, d.general || {});
-            state.tanques = d.tanques || [];
-            state.accesoriosByTank = d.accesoriosByTank || {};
-            state.accesoriosRed = d.accesoriosRed || [];
-            state.equipos = d.equipos || [];
-            state.observaciones = d.observaciones || {};
-            state.actividades = d.actividades || {};
-            renderAll();
-            alert("Borrador cargado.");
+        function generarIdAleatorio(){
+            return Math.floor(Math.random()*9999999).toString(16);
         }
 
-        function resetAll(){
-            if(!confirm("¿Seguro que deseas reiniciar todo el formulario?")) return;
-            localStorage.removeItem("informe_solgas_v1");
-            location.reload();
-        }
+        /* ======================================================= */
+        /*       MANEJO DE TANQUES                                 */
+        /* ======================================================= */
 
-        /* =========================
-           RENDER: TANQUES
-           ========================= */
-        const listaTanquesEl = q("#lista-tanques");
-        const selectTanqueForAcc = q("#selectTanqueForAcc");
+        let tanques = [];
+        const contTanques = document.getElementById("lista-tanques");
+        const btnAddTank = document.getElementById("btnAddTank");
 
-        function renderTanques(){
-            listaTanquesEl.innerHTML = "";
-            selectTanqueForAcc.innerHTML = "";
-            state.tanques.forEach((t, idx) => {
-                const index = idx + 1;
-                const div = document.createElement("div");
-                div.className = "tank-block";
-                div.dataset.index = index;
-                div.innerHTML = `
-                    <div style="display:flex;justify-content:space-between;align-items:center">
-                        <h3>Tanque ${index} <small style="color:#9db4d0">(${t.serie || '-'})</small></h3>
-                        <div>
-                            <button class="btn" onclick="editTanque(${index})">Editar</button>
-                            <button class="btn btn-danger" onclick="removeTanque(${index})">Eliminar</button>
-                        </div>
+        btnAddTank.addEventListener("click",()=>{
+            const id = generarIdAleatorio();
+            const idx = tanques.length + 1;
+            tanques.push({id:id});
+
+            const block = createElement(`
+                <div class="tank-block" id="tank_${id}">
+                    <h3 style="color:var(--accent);font-size:15px;margin-top:0">Tanque ${idx}</h3>
+
+                    <div class="form-row">
+                        <label>N° de serie:</label>
+                        <input type="text" class="t_serie" />
                     </div>
-                    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:10px">
-                        <div><label>Serie</label><input type="text" value="${t.serie || ''}" onchange="updateTanqueField(${index}, 'serie', this.value)"></div>
-                        <div><label>Capacidad (gal)</label><input type="text" value="${t.capacidad || ''}" onchange="updateTanqueField(${index}, 'capacidad', this.value)"></div>
-                        <div><label>Año de fabricación</label><input type="text" value="${t.anio || ''}" onchange="updateTanqueField(${index}, 'anio', this.value)"></div>
-                        <div><label>Tipo</label><input type="text" value="${t.tipo || ''}" onchange="updateTanqueField(${index}, 'tipo', this.value)"></div>
-                        <div><label>Fabricante</label><input type="text" value="${t.fabricante || ''}" onchange="updateTanqueField(${index}, 'fabricante', this.value)"></div>
-                        <div><label>% Actual</label><input type="text" value="${t.porcentaje || ''}" onchange="updateTanqueField(${index}, 'porcentaje', this.value)"></div>
+
+                    <div class="form-row">
+                        <label>Capacidad (gal):</label>
+                        <input type="number" class="t_capa" />
                     </div>
-                `;
-                listaTanquesEl.appendChild(div);
 
-                // opción para select de accesorios
-                const opt = document.createElement("option");
-                opt.value = index;
-                opt.text = `Tanque ${index} - ${t.serie || '-'}`;
-                selectTanqueForAcc.appendChild(opt);
-            });
-            renderAccesoriosByTank();
-        }
-
-        function agregarTanque(){
-            state.tanques.push({serie:"", capacidad:"", anio:"", tipo:"", fabricante:"", porcentaje:""});
-            renderTanques();
-        }
-
-        function editTanque(index){
-            // scroll a la tarjeta
-            const el = listaTanquesEl.querySelector(`[data-index="${index}"]`);
-            if(el) el.scrollIntoView({behavior:"smooth", block:"center"});
-        }
-
-        function removeTanque(index){
-            state.tanques.splice(index-1, 1);
-            // reconstruir accesoriosByTank keys: shift down indexes
-            const newAcc = {};
-            Object.keys(state.accesoriosByTank).forEach(k => {
-                const ik = parseInt(k,10);
-                if(ik === index) return; // eliminar este
-                const newIndex = ik > index ? ik-1 : ik;
-                newAcc[newIndex] = state.accesoriosByTank[k];
-            });
-            state.accesoriosByTank = newAcc;
-            renderAll();
-        }
-
-        function updateTanqueField(index, field, value){
-            const t = state.tanques[index-1];
-            if(!t) return;
-            t[field] = value;
-            renderTanques();
-        }
-
-        document.getElementById("btnAddTank").addEventListener("click", agregarTanque);
-        document.getElementById("btnExport").addEventListener("click", saveDraft);
-        document.getElementById("btnLoad").addEventListener("click", loadDraft);
-        document.getElementById("btnReset").addEventListener("click", resetAll);
-
-        /* =========================
-           RENDER: ACCESORIOS POR TANQUE
-           ========================= */
-
-        function renderAccesoriosByTank(){
-            const cont = q("#accesorios-tanque-contenedor");
-            cont.innerHTML = "";
-            const current = parseInt(selectTanqueForAcc.value || "1",10) || 1;
-            if(state.tanques.length === 0){
-                cont.innerHTML = "<div style='color:#9db4d0'>No hay tanques. Agrega uno para editar sus accesorios.</div>";
-                return;
-            }
-            const tankIndex = Math.min(current, state.tanques.length);
-            const accesoriosCols = [
-                "Válvula de llenado",
-                "Medidor de porcentaje",
-                "Válvula de seguridad",
-                "Válvula de drenaje",
-                "Multiválvula",
-                "Válvula exceso de flujo (Retorno)",
-                "Válvula exceso de flujo (Bypass)",
-                "Val 3"
-            ];
-            const atributos = ["Marca","Código","Serie","Mes/Año de fabricación"];
-
-            // ensure object exists
-            state.accesoriosByTank[tankIndex] = state.accesoriosByTank[tankIndex] || {};
-            const accObj = state.accesoriosByTank[tankIndex];
-
-            accesoriosCols.forEach(accName => {
-                const block = document.createElement("div");
-                block.className = "acc-block";
-                block.innerHTML = `<h4 style="margin:0 0 8px 0;color:#9db4d0">${accName}</h4>`;
-                const grid = document.createElement("div");
-                grid.style.display = "grid";
-                grid.style.gridTemplateColumns = "repeat(4,1fr)";
-                grid.style.gap = "8px";
-                atributos.forEach(attr => {
-                    const key = `${accName}__${attr}`;
-                    const value = (accObj[accName] && accObj[accName][attr]) || "";
-                    const col = document.createElement("div");
-                    col.innerHTML = `<label style="font-size:13px;color:#9db4d0">${attr}</label><input type="text" value="${value}" onchange="updateAccesorio(${tankIndex}, '${accName}', '${attr}', this.value)">`;
-                    grid.appendChild(col);
-                });
-                block.appendChild(grid);
-                cont.appendChild(block);
-            });
-        }
-
-        selectTanqueForAcc.addEventListener("change", renderAccesoriosByTank);
-
-        function updateAccesorio(tankIndex, accName, attr, value){
-            state.accesoriosByTank[tankIndex] = state.accesoriosByTank[tankIndex] || {};
-            state.accesoriosByTank[tankIndex][accName] = state.accesoriosByTank[tankIndex][accName] || {};
-            state.accesoriosByTank[tankIndex][accName][attr] = value;
-        }
-
-        /* =========================
-           ACCESORIOS EN RED
-           ========================= */
-
-        function renderAccesoriosRed(){
-            const cont = q("#lista-accesorios-red");
-            cont.innerHTML = "";
-            if(state.accesoriosRed.length === 0){
-                cont.innerHTML = "<div style='color:#9db4d0'>Sin accesorios en red</div>";
-                return;
-            }
-            state.accesoriosRed.forEach((r, idx) => {
-                const div = document.createElement("div");
-                div.className = "red-block";
-                div.innerHTML = `
-                    <div style="display:flex;justify-content:space-between;align-items:center">
-                        <strong style="color:#9db4d0">${r.Tipo || '-'}</strong>
-                        <div>
-                            <button class="btn" onclick="editAccRed(${idx})">Editar</button>
-                            <button class="btn btn-danger" onclick="removeAccRed(${idx})">Eliminar</button>
-                        </div>
+                    <div class="form-row">
+                        <label>Año de fabricación:</label>
+                        <input type="text" class="t_anio" />
                     </div>
-                    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px">
-                        <div><label>Tipo</label><input type="text" value="${r.Tipo || ''}" onchange="updateAccRed(${idx}, 'Tipo', this.value)"></div>
-                        <div><label>Marca</label><input type="text" value="${r.Marca || ''}" onchange="updateAccRed(${idx}, 'Marca', this.value)"></div>
-                        <div><label>Serie</label><input type="text" value="${r.Serie || ''}" onchange="updateAccRed(${idx}, 'Serie', this.value)"></div>
-                        <div><label>Código</label><input type="text" value="${r.Código || ''}" onchange="updateAccRed(${idx}, 'Código', this.value)"></div>
-                        <div style="grid-column:span 2"><label>Mes/Año de fabricación</label><input type="text" value="${r['Mes/Año de fabricación'] || ''}" onchange="updateAccRed(${idx}, 'Mes/Año de fabricación', this.value)"></div>
+
+                    <div class="form-row">
+                        <label>Tipo de tanque:</label>
+                        <input type="text" class="t_tipo" />
                     </div>
-                `;
-                cont.appendChild(div);
-            });
-        }
 
-        document.getElementById("btnAddAccRed").addEventListener("click", ()=>{
-            state.accesoriosRed.push({Tipo:"", Marca:"", Serie:"", Código:"", "Mes/Año de fabricación":""});
-            renderAccesoriosRed();
-        });
-
-        function updateAccRed(idx, field, value){
-            if(!state.accesoriosRed[idx]) return;
-            state.accesoriosRed[idx][field] = value;
-        }
-
-        function removeAccRed(idx){
-            state.accesoriosRed.splice(idx,1);
-            renderAccesoriosRed();
-        }
-
-        /* =========================
-           EQUIPOS
-           ========================= */
-
-        function renderEquipos(){
-            const cont = q("#lista-equipos");
-            cont.innerHTML = "";
-            if(state.equipos.length === 0){
-                cont.innerHTML = "<div style='color:#9db4d0'>Sin equipos registrados</div>";
-                return;
-            }
-            state.equipos.forEach((e, idx) => {
-                const i = idx+1;
-                const div = document.createElement("div");
-                div.className = "equip-block";
-                div.innerHTML = `
-                    <div style="display:flex;justify-content:space-between;align-items:center">
-                        <h4>${e["Equipo"] || e["Tipo de equipo"] || 'Equipo ' + i}</h4>
-                        <div>
-                            <button class="btn" onclick="editEquipo(${i})">Editar</button>
-                            <button class="btn btn-danger" onclick="removeEquipo(${i})">Eliminar</button>
-                        </div>
+                    <div class="form-row">
+                        <label>Fabricante:</label>
+                        <input type="text" class="t_fabricante" />
                     </div>
-                    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px">
-                        <div><label>Tipo de equipo</label><input type="text" value="${e["Tipo de equipo"] || ''}" onchange="updateEquipoField(${i}, 'Tipo de equipo', this.value)"></div>
-                        <div><label>Marca</label><input type="text" value="${e["Marca"] || ''}" onchange="updateEquipoField(${i}, 'Marca', this.value)"></div>
-                        <div><label>Modelo</label><input type="text" value="${e["Modelo"] || ''}" onchange="updateEquipoField(${i}, 'Modelo', this.value)"></div>
-                        <div><label>Serie</label><input type="text" value="${e["Serie"] || ''}" onchange="updateEquipoField(${i}, 'Serie', this.value)"></div>
-                        <div><label>Año de fabricación</label><input type="text" value="${e["Año de fabricación"] || ''}" onchange="updateEquipoField(${i}, 'Año de fabricación', this.value)"></div>
+
+                    <div class="form-row">
+                        <label>% Actual:</label>
+                        <input type="text" class="t_porcentaje" />
                     </div>
-                `;
-                cont.appendChild(div);
-            });
-        }
 
-        document.getElementById("btnAddEquipo").addEventListener("click", ()=>{
-            state.equipos.push({"Tipo de equipo": "", "Equipo":"", "Marca":"", "Modelo":"", "Serie":"", "Año de fabricación":""});
-            renderEquipos();
-        });
-
-        function updateEquipoField(index, field, value){
-            if(!state.equipos[index-1]) return;
-            state.equipos[index-1][field] = value;
-            renderEquipos();
-        }
-
-        function removeEquipo(index){
-            state.equipos.splice(index-1,1);
-            renderEquipos();
-        }
-
-        /* =========================
-           ACTIVIDADES UI (10.x)
-           ========================= */
-
-        function renderActividadesUI(){
-            const cont = q("#actividades-container");
-            cont.innerHTML = "";
-
-            // generar 10.x por tanques
-            state.tanques.forEach((t, idx) => {
-                const code = `10.${idx+1}`;
-                const block = document.createElement("div");
-                block.className = "foto-slot";
-                block.innerHTML = `<h3>${code} · TRABAJOS REALIZADOS EN EL TANQUE ${idx+1}</h3>
-                    <div id="acts_${code.replace('.', '_')}"></div>
                     <div style="margin-top:8px">
-                        <button class="btn" onclick="addActividad('${code}')">+ Agregar actividad</button>
-                    </div>`;
-                cont.appendChild(block);
-                renderActividadesList(code);
+                        <button class="btn-danger" onclick="document.getElementById('tank_${id}').remove(); actualizarSelectTanque()">Eliminar tanque</button>
+                    </div>
+
+                </div>
+            `);
+
+            contTanques.appendChild(block);
+            actualizarSelectTanque();
+        });
+
+        function actualizarSelectTanque(){
+            const select = document.getElementById("selectTanqueForAcc");
+            select.innerHTML = "";
+            const tankEls = document.querySelectorAll(".tank-block");
+            tankEls.forEach((tb,i)=>{
+                const op = document.createElement("option");
+                op.value = tb.id.replace("tank_","");
+                op.textContent = "Tanque " + (i+1);
+                select.appendChild(op);
+            });
+            renderAccesoriosTanque();
+        }
+
+        /* ======================================================= */
+        /*      ACCESORIOS POR TANQUE                              */
+        /* ======================================================= */
+
+        const contAccTank = document.getElementById("accesorios-tanque-contenedor");
+
+        function renderAccesoriosTanque(){
+            const select = document.getElementById("selectTanqueForAcc");
+            const idSel = select.value;
+            if(!idSel){ contAccTank.innerHTML = ""; return; }
+
+            const html = `
+                <div class="acc-block">
+                    <h3 style="color:var(--accent);font-size:15px;margin-top:0">Accesorios</h3>
+
+                    <p style="color:var(--muted);margin-top:-4px;margin-bottom:10px">
+                        Ingresa Marca, Código, Serie y Mes/Año.
+                    </p>
+
+                    <div class="form-row">
+                        <label>Válvula de llenado (Marca):</label>
+                        <input type="text" id="a_ll_marca" />
+                    </div>
+                    <div class="form-row">
+                        <label>Código:</label><input type="text" id="a_ll_codigo" />
+                    </div>
+                    <div class="form-row">
+                        <label>Serie:</label><input type="text" id="a_ll_serie" />
+                    </div>
+                    <div class="form-row">
+                        <label>Mes/Año de fabricación:</label><input type="text" id="a_ll_mesanio" />
+                    </div>
+                </div>
+            `;
+
+            contAccTank.innerHTML = html;
+        }
+
+        document.getElementById("selectTanqueForAcc").addEventListener("change", renderAccesoriosTanque);
+
+        /* ======================================================= */
+        /*  ACCESORIOS DE RED (7.x)                                */
+        /* ======================================================= */
+
+        const contAccRed = document.getElementById("lista-accesorios-red");
+        const btnAddAccRed = document.getElementById("btnAddAccRed");
+
+        btnAddAccRed.addEventListener("click",()=>{
+            const id = generarIdAleatorio();
+            const block = createElement(`
+                <div class="red-block" id="red_${id}">
+                    <div class="form-row">
+                        <label>Tipo:</label>
+                        <input type="text" class="r_tipo" />
+                    </div>
+                    <div class="form-row">
+                        <label>Marca:</label>
+                        <input type="text" class="r_marca" />
+                    </div>
+                    <div class="form-row">
+                        <label>Serie:</label>
+                        <input type="text" class="r_serie" />
+                    </div>
+                    <div class="form-row">
+                        <label>Código:</label>
+                        <input type="text" class="r_codigo" />
+                    </div>
+                    <div class="form-row">
+                        <label>Mes/Año de fabricación:</label>
+                        <input type="text" class="r_mesanio" />
+                    </div>
+
+                    <div style="margin-top:8px">
+                        <button class="btn-danger" onclick="document.getElementById('red_${id}').remove()">Eliminar</button>
+                    </div>
+                </div>
+            `);
+            contAccRed.appendChild(block);
+        });
+
+        /* ======================================================= */
+        /* EQUIPOS DE INSTALACIÓN                                 */
+        /* ======================================================= */
+
+        const contEquipos = document.getElementById("lista-equipos");
+        const btnAddEquipo = document.getElementById("btnAddEquipo");
+
+        btnAddEquipo.addEventListener("click",()=>{
+            const id = generarIdAleatorio();
+            const block = createElement(`
+                <div class="equip-block" id="eq_${id}">
+                    <div class="form-row">
+                        <label>Tipo de equipo:</label>
+                        <input type="text" class="eq_tipo" />
+                    </div>
+                    <div class="form-row">
+                        <label>Marca:</label>
+                        <input type="text" class="eq_marca" />
+                    </div>
+                    <div class="form-row">
+                        <label>Serie:</label>
+                        <input type="text" class="eq_serie" />
+                    </div>
+
+                    <div style="margin-top:8px">
+                        <button class="btn-danger" onclick="document.getElementById('eq_${id}').remove()">Eliminar</button>
+                    </div>
+                </div>
+            `);
+            contEquipos.appendChild(block);
+        });
+
+        /* ======================================================= */
+        /*   PETICIÓN DE SLOTS AL BACKEND (/photo_slots)          */
+        /* ======================================================= */
+
+        async function solicitarSlotsAlBackend(){
+            const payload = construirPayloadBasico();
+            try{
+                const res = await fetch("/photo_slots", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+                if(!res.ok){
+                    const txt = await res.text();
+                    alert("Error al solicitar subtítulos: " + txt);
+                    return [];
+                }
+                const j = await res.json();
+                return j.slots || [];
+            }catch(err){
+                console.error("Error fetch slots:", err);
+                alert("Error de red solicitando subtítulos.");
+                return [];
+            }
+        }
+
+        function construirPayloadBasico(){
+            const general = {
+                "Nombre o razón social del cliente": document.getElementById("c_nombre").value || "",
+                "Fecha de inspección": document.getElementById("c_fecha").value || "",
+                "Dirección": document.getElementById("c_direccion").value || "",
+                "RUC o DNI": document.getElementById("c_doc").value || "",
+                "Número de instalación": document.getElementById("c_instalacion").value || "",
+                "Distrito": document.getElementById("c_distrito").value || "",
+                "Departamento": document.getElementById("c_departamento").value || "",
+                "Coordenadas": document.getElementById("c_coordenadas").value || "",
+                "Nombre del contacto": document.getElementById("c_contacto").value || "",
+                "Número del contacto": document.getElementById("c_num_contacto").value || "",
+                "Correo de contacto": document.getElementById("c_correo").value || ""
+            };
+
+            const tanquesPayload = [];
+            const tankEls = document.querySelectorAll(".tank-block");
+            tankEls.forEach(tb => {
+                const serie = tb.querySelector(".t_serie") ? tb.querySelector(".t_serie").value : "";
+                const capacidad = tb.querySelector(".t_capa") ? tb.querySelector(".t_capa").value : "";
+                const anio = tb.querySelector(".t_anio") ? tb.querySelector(".t_anio").value : "";
+                const tipo = tb.querySelector(".t_tipo") ? tb.querySelector(".t_tipo").value : "";
+                const fabricante = tb.querySelector(".t_fabricante") ? tb.querySelector(".t_fabricante").value : "";
+                const porcentaje = tb.querySelector(".t_porcentaje") ? tb.querySelector(".t_porcentaje").value : "";
+                tanquesPayload.push({ serie, capacidad, anio, tipo, fabricante, porcentaje });
             });
 
-            // redes llenado
-            const codeL = `10.${state.tanques.length + 1}`;
-            const blL = document.createElement("div");
-            blL.className = "foto-slot";
-            blL.innerHTML = `<h3>${codeL} · TRABAJOS REALIZADOS EN REDES DE LLENADO Y RETORNO</h3>
-                <div id="acts_${codeL.replace('.', '_')}"></div>
-                <div style="margin-top:8px"><button class="btn" onclick="addActividad('${codeL}')">+ Agregar actividad</button></div>`;
-            cont.appendChild(blL);
-            renderActividadesList(codeL);
+            const accesoriosTanque = {}; // UI simple - puedes ampliar
+            const accesoriosRed = [];
+            document.querySelectorAll(".red-block").forEach(rb => {
+                accesoriosRed.push({
+                    "Tipo": rb.querySelector(".r_tipo") ? rb.querySelector(".r_tipo").value : "",
+                    "Marca": rb.querySelector(".r_marca") ? rb.querySelector(".r_marca").value : "",
+                    "Serie": rb.querySelector(".r_serie") ? rb.querySelector(".r_serie").value : "",
+                    "Código": rb.querySelector(".r_codigo") ? rb.querySelector(".r_codigo").value : "",
+                    "Mes/Año de fabricación": rb.querySelector(".r_mesanio") ? rb.querySelector(".r_mesanio").value : ""
+                });
+            });
 
-            // redes consumo
-            const codeC = `10.${state.tanques.length + 2}`;
-            const blC = document.createElement("div");
-            blC.className = "foto-slot";
-            blC.innerHTML = `<h3>${codeC} · TRABAJOS REALIZADOS EN REDES DE CONSUMO</h3>
-                <div id="acts_${codeC.replace('.', '_')}"></div>
-                <div style="margin-top:8px"><button class="btn" onclick="addActividad('${codeC}')">+ Agregar actividad</button></div>`;
-            cont.appendChild(blC);
-            renderActividadesList(codeC);
+            const equipos = [];
+            document.querySelectorAll(".equip-block").forEach(eb => {
+                equipos.push({
+                    "Tipo de equipo": eb.querySelector(".eq_tipo") ? eb.querySelector(".eq_tipo").value : "",
+                    "Equipo": "",
+                    "Marca": eb.querySelector(".eq_marca") ? eb.querySelector(".eq_marca").value : "",
+                    "Modelo": "",
+                    "Serie": eb.querySelector(".eq_serie") ? eb.querySelector(".eq_serie").value : ""
+                });
+            });
+
+            const observaciones = {
+                "7.1": document.getElementById("obs_7_1").value || "",
+                "7.2": document.getElementById("obs_7_2").value || "",
+                "7.3": document.getElementById("obs_7_3").value || "",
+                "7.4": document.getElementById("obs_7_4").value || "",
+                "7.5": document.getElementById("obs_7_5").value || ""
+            };
+
+            return {
+                general,
+                tanques: tanquesPayload,
+                accesoriosTanque,
+                accesoriosRed,
+                equipos,
+                observaciones
+            };
         }
 
-        function addActividad(code){
-            state.actividades[code] = state.actividades[code] || [];
-            state.actividades[code].push({descripcion: ""});
-            renderActividadesList(code);
-        }
+        /* ======================================================= */
+        /*   RENDER DE SLOTS 9.x Y SUBIDA DE IMÁGENES              */
+        /* ======================================================= */
 
-        function renderActividadesList(code){
-            const key = code.replace('.', '_');
-            const container = q(`#acts_${key}`);
-            if(!container) return;
-            container.innerHTML = "";
-            const list = state.actividades[code] || [];
-            if(list.length === 0){
-                container.innerHTML = "<div style='color:#9db4d0'>No hay actividades. Agrega una si realizaste trabajos.</div>";
+        const containerSlotsFotos = document.getElementById("containerSlotsFotos");
+        let currentSlots = [];
+
+        async function cargarYRenderizarSlots(){
+            containerSlotsFotos.innerHTML = "<div style='color:var(--muted)'>Solicitando subtítulos...</div>";
+            const slots = await solicitarSlotsAlBackend();
+            currentSlots = slots;
+            if(!slots.length){
+                containerSlotsFotos.innerHTML = "<div style='color:var(--muted)'>No se encontraron subtítulos para imágenes.</div>";
                 return;
             }
-            list.forEach((act, idx) => {
-                const i = idx+1;
-                const actDiv = document.createElement("div");
-                actDiv.className = "activity-block";
-                actDiv.innerHTML = `
-                    <div class="activity-title">Actividad ${i}</div>
-                    <div style="display:grid;grid-template-columns:1fr 120px;gap:12px;align-items:start">
-                        <div>
-                            <label>Descripción</label>
-                            <textarea onchange="updateActividad('${code}', ${i}, this.value)">${act.descripcion || ''}</textarea>
-                        </div>
-                        <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
-                            <div style="font-size:13px;color:#9db4d0">Antes</div>
-                            <div class="slot-upload" id="upl_${key}_act${i}_antes">Click o arrastra</div>
-                            <div style="height:8px"></div>
-                            <div style="font-size:13px;color:#9db4d0">Después</div>
-                            <div class="slot-upload" id="upl_${key}_act${i}_despues">Click o arrastra</div>
-                        </div>
-                    </div>
-                    <div style="margin-top:8px;display:flex;gap:8px;justify-content:flex-end">
-                        <button class="btn btn-danger" onclick="removeActividad('${code}', ${i})">Eliminar actividad</button>
-                    </div>
-                `;
-                container.appendChild(actDiv);
-
-                // attach file areas for antes/despues
-                setupActivityUpload(zoneId=`upl_${key}_act${i}_antes`, code, i, "antes");
-                setupActivityUpload(zoneId=`upl_${key}_act${i}_despues`, code, i, "despues");
-            });
-        }
-
-        function updateActividad(code, index, value){
-            const list = state.actividades[code] || [];
-            if(!list[index-1]) return;
-            list[index-1].descripcion = value;
-        }
-
-        function removeActividad(code, index){
-            const list = state.actividades[code] || [];
-            list.splice(index-1, 1);
-            renderActividadesList(code);
-        }
-
-        /* =========================
-           HANDLERS: UPLOAD SLOTS GENERALES y ACTIVIDADES
-           ========================= */
-
-        // render slots recibidos del servidor
-        function renderSlotsUI(slots){
-            const cont = q("#slots-container");
-            cont.innerHTML = "";
-            state.slots = slots;
+            containerSlotsFotos.innerHTML = "";
             slots.forEach(s => {
                 const slotKey = s.code.replace(".", "_");
-                const div = document.createElement("div");
-                div.className = "foto-slot";
-                div.innerHTML = `<h3>${s.code} · ${s.label}</h3>
-                    <div class="slot-upload-row" id="slotrow_${slotKey}"></div>`;
-                cont.appendChild(div);
+                const slotDiv = document.createElement("div");
+                slotDiv.className = "foto-slot";
+                slotDiv.id = `slot_wrap_${slotKey}`;
+                slotDiv.innerHTML = `<h3 style="margin:0 0 8px 0;color:var(--accent)">${s.code} · ${s.label}</h3>
+                    <div class="slot-upload-row" id="row_${slotKey}"></div>`;
+                containerSlotsFotos.appendChild(slotDiv);
 
-                const row = q(`#slotrow_${slotKey}`);
-                for(let i=0;i< s.cantidad;i++){
-                    const slotId = `${slotKey}__${i+1}`;
-                    const up = document.createElement("div");
-                    up.className = "slot-upload";
-                    up.id = `slot_${slotId}`;
-                    up.innerHTML = `<div class="slot-title">Recuadro ${i+1}</div><input type="file" accept="image/png,image/jpeg" id="file_${slotId}" style="display:none">`;
-                    row.appendChild(up);
+                const row = slotDiv.querySelector(`#row_${slotKey}`);
+                for(let i=0;i< s.cantidad; i++){
+                    const idx = i+1;
+                    const uploadId = `${slotKey}__${idx}`;
+                    const el = document.createElement("div");
+                    el.className = "slot-upload";
+                    el.id = `slot_upload_${uploadId}`;
+                    el.innerHTML = `<div class="slot-title">Recuadro ${idx}</div>
+                                    <input type="file" accept="image/png, image/jpeg" id="file_${uploadId}" style="display:none">`;
+                    row.appendChild(el);
 
-                    const input = up.querySelector("input[type=file]");
-                    input.addEventListener("change", (ev)=> handleFileForSlot(slotKey, i+1, ev.target.files[0]));
-                    up.addEventListener("click", ()=> input.click());
-                    enableDrop(up, (files)=> {
-                        if(files.length) handleFileForSlot(slotKey, i+1, files[0]);
+                    const input = el.querySelector("input[type=file]");
+                    el.addEventListener("click", ()=> input.click());
+                    input.addEventListener("change", (ev)=> {
+                        const f = ev.target.files[0];
+                        manejarArchivoSlot(slotKey, idx, f);
+                    });
+
+                    // drag & drop
+                    el.addEventListener("dragover", (e)=> { e.preventDefault(); el.style.background="rgba(255,255,255,0.02)"; });
+                    el.addEventListener("dragleave", (e)=> { el.style.background=""; });
+                    el.addEventListener("drop", (e)=> {
+                        e.preventDefault();
+                        el.style.background="";
+                        const files = Array.from(e.dataTransfer.files).filter(ff => ff.type.startsWith("image/"));
+                        if(files.length) manejarArchivoSlot(slotKey, idx, files[0]);
                     });
                 }
             });
         }
 
-        function enableDrop(elem, cb){
-            elem.addEventListener("dragover", e=>{ e.preventDefault(); elem.style.background="rgba(255,255,255,0.03)"; });
-            elem.addEventListener("dragleave", e=>{ elem.style.background=""; });
-            elem.addEventListener("drop", e=>{ e.preventDefault(); elem.style.background=""; const files = Array.from(e.dataTransfer.files).filter(f=> f.type.startsWith("image/")); cb(files); });
-        }
+        // estructura para almacenar archivos en memoria antes del submit
+        const uploadState = {
+            slots: {},     // { "9_1": [File,...] }
+            activities: {} // { "10_1": {1:{antes:File,despues:File}, ...} }
+        };
 
-        function handleFileForSlot(slotKey, index, file){
+        function manejarArchivoSlot(slotKey, idx, file){
             if(!file) return;
-            // validar tipo y tamaño
             const ext = file.name.split(".").pop().toLowerCase();
             if(!["jpg","jpeg","png"].includes(ext)){
                 alert("Formato no permitido. Solo JPG/PNG.");
                 return;
             }
             if(file.size > (6*1024*1024)){
-                alert("Archivo mayor a 6MB.");
+                alert("Archivo demasiado grande (>6MB).");
                 return;
             }
-            state.uploadedPhotos[slotKey] = state.uploadedPhotos[slotKey] || {images:[], activities:{}};
-            state.uploadedPhotos[slotKey].images[index-1] = file;
-            renderSlotThumb(slotKey, index);
+            uploadState.slots[slotKey] = uploadState.slots[slotKey] || [];
+            uploadState.slots[slotKey][idx-1] = file;
+            renderThumbSlot(slotKey, idx);
         }
 
-        function renderSlotThumb(slotKey, index){
-            const slotId = `${slotKey}__${index}`;
-            const el = q(`#slot_${slotId}`);
+        function renderThumbSlot(slotKey, idx){
+            const uploadId = `${slotKey}__${idx}`;
+            const el = document.getElementById(`slot_upload_${uploadId}`);
             if(!el) return;
-            el.style.position = "relative";
-            // remove existing img preview
-            const existing = el.querySelector("img");
-            if(existing) existing.remove();
-            const file = (state.uploadedPhotos[slotKey] && state.uploadedPhotos[slotKey].images[index-1]) || null;
+            const prevImg = el.querySelector("img");
+            if(prevImg) prevImg.remove();
+            const prevBtn = el.querySelector(".delete-img");
+            if(prevBtn) prevBtn.remove();
+
+            const file = uploadState.slots[slotKey] && uploadState.slots[slotKey][idx-1];
             if(file){
-                const img = document.createElement("img");
-                img.src = URL.createObjectURL(file);
-                img.style.width = "100%";
-                img.style.height = "90px";
-                img.style.objectFit = "cover";
-                el.appendChild(img);
-                const btn = document.createElement("button");
-                btn.className = "delete-img";
-                btn.innerText = "×";
-                btn.onclick = (ev)=> { ev.stopPropagation(); deleteSlotImage(slotKey, index); };
-                el.appendChild(btn);
-            }
-        }
-
-        function deleteSlotImage(slotKey, index){
-            if(state.uploadedPhotos[slotKey] && state.uploadedPhotos[slotKey].images[index-1]){
-                state.uploadedPhotos[slotKey].images[index-1] = null;
-            }
-            const slotId = `${slotKey}__${index}`;
-            const el = q(`#slot_${slotId}`);
-            if(el){
-                const img = el.querySelector("img");
-                if(img) img.remove();
-                const btn = el.querySelector(".delete-img");
-                if(btn) btn.remove();
-            }
-        }
-
-        /* =========================
-           HANDLERS ACTIVIDADES: subir antes/despues
-           ========================= */
-
-        function setupActivityUpload(zoneId, code, actIndex, tipo){
-            // tipo: "antes" or "despues"
-            const el = document.getElementById(zoneId);
-            if(!el) return;
-            // create hidden input
-            const input = document.createElement("input");
-            input.type = "file";
-            input.accept = "image/png,image/jpeg";
-            input.style.display = "none";
-            el.appendChild(input);
-            el.addEventListener("click", ()=> input.click());
-            enableDrop(el, (files)=> {
-                if(files.length) handleActivityFile(code, actIndex, tipo, files[0]);
-            });
-            input.addEventListener("change", (ev)=> handleActivityFile(code, actIndex, tipo, ev.target.files[0]));
-            // render existing if present
-            renderActivityThumb(zoneId, code, actIndex, tipo);
-        }
-
-        function handleActivityFile(code, actIndex, tipo, file){
-            if(!file) return;
-            const ext = file.name.split(".").pop().toLowerCase();
-            if(!["jpg","jpeg","png"].includes(ext)){ alert("Solo JPG/PNG"); return; }
-            if(file.size > (6*1024*1024)){ alert("Max 6MB"); return; }
-            const slotKey = code.replace(".", "_");
-            state.uploadedPhotos[slotKey] = state.uploadedPhotos[slotKey] || {images:[], activities:{}};
-            state.uploadedPhotos[slotKey].activities = state.uploadedPhotos[slotKey].activities || {};
-            state.uploadedPhotos[slotKey].activities[actIndex] = state.uploadedPhotos[slotKey].activities[actIndex] || {antes:null, despues:null};
-            state.uploadedPhotos[slotKey].activities[actIndex][tipo] = file;
-            renderActivityThumb(`upl_${slotKey}_act${actIndex}_${tipo}`, code, actIndex, tipo);
-        }
-
-        function renderActivityThumb(zoneId, code, actIndex, tipo){
-            const el = document.getElementById(zoneId);
-            if(!el) return;
-            // remove existing img/button
-            const oldImg = el.querySelector("img");
-            const oldBtn = el.querySelector(".delete-img");
-            if(oldImg) oldImg.remove();
-            if(oldBtn) oldBtn.remove();
-
-            const slotKey = code.replace(".", "_");
-            const actObj = state.uploadedPhotos[slotKey] && state.uploadedPhotos[slotKey].activities && state.uploadedPhotos[slotKey].activities[actIndex];
-            if(actObj && actObj[tipo]){
-                const file = actObj[tipo];
                 const img = document.createElement("img");
                 img.src = URL.createObjectURL(file);
                 img.style.width = "100%"; img.style.height="90px"; img.style.objectFit="cover";
@@ -962,189 +695,322 @@
                 const btn = document.createElement("button");
                 btn.className = "delete-img";
                 btn.innerText = "×";
-                btn.onclick = (ev)=> { ev.stopPropagation(); deleteActivityPhoto(code, actIndex, tipo); };
+                btn.onclick = (ev)=> { ev.stopPropagation(); eliminarArchivoSlot(slotKey, idx); };
                 el.appendChild(btn);
-            } else {
-                // show hint text
-                el.innerText = "Click o arrastra";
             }
         }
 
-        function deleteActivityPhoto(code, actIndex, tipo){
-            const slotKey = code.replace(".", "_");
-            if(state.uploadedPhotos[slotKey] && state.uploadedPhotos[slotKey].activities && state.uploadedPhotos[slotKey].activities[actIndex]){
-                state.uploadedPhotos[slotKey].activities[actIndex][tipo] = null;
-            }
-            renderActividadesList(code);
+        function eliminarArchivoSlot(slotKey, idx){
+            if(uploadState.slots[slotKey]) uploadState.slots[slotKey][idx-1] = null;
+            const uploadId = `${slotKey}__${idx}`;
+            const el = document.getElementById(`slot_upload_${uploadId}`);
+            if(!el) return;
+            const img = el.querySelector("img"); if(img) img.remove();
+            const btn = el.querySelector(".delete-img"); if(btn) btn.remove();
         }
 
-        /* =========================
-           CARGAR SLOTS DESDE BACKEND
-           ========================= */
-        document.getElementById("btnLoadSlots").addEventListener("click", async ()=>{
-            // construir payload parcial (sin fotos) y pedir slots
-            const payload = buildPayloadForSlots();
-            try{
-                const res = await fetch("/photo_slots", {
-                    method:"POST",
-                    headers: {"Content-Type":"application/json"},
-                    body: JSON.stringify(payload)
-                });
-                if(!res.ok){ alert("Error al solicitar subtítulos"); return; }
-                const j = await res.json();
-                const slots = j.slots || [];
-                renderSlotsUI(slots);
-                alert("Subtítulos cargados. Completa las fotos donde corresponda.");
-            }catch(err){
-                console.error(err);
-                alert("Error de red al cargar subtítulos.");
-            }
-        });
+        /* ======================================================= */
+        /*   ACTIVIDADES 10.x (ANTES / DESPUÉS)                   */
+        /* ======================================================= */
 
-        function buildPayloadForSlots(){
-            // Similar a buildPayload, pero sólo con datos necesarios para que el backend genere la lista
-            const payload = {
-                general: {
-                    "Nombre o razón social del cliente": q("#c_nombre").value || "",
-                    "Fecha de inspección": q("#c_fecha").value || "",
-                    "Dirección": q("#c_direccion").value || "",
-                    "RUC o DNI": q("#c_doc").value || "",
-                    "Número de instalación": q("#c_instalacion").value || "",
-                    "Distrito": q("#c_distrito").value || "",
-                    "Departamento": q("#c_departamento").value || "",
-                    "Coordenadas": q("#c_coordenadas").value || "",
-                    "Nombre del contacto": q("#c_contacto").value || "",
-                    "Número del contacto": q("#c_num_contacto").value || "",
-                    "Correo de contacto": q("#c_correo").value || ""
-                },
-                tanques: state.tanques.map(t=>({
-                    serie: t.serie, capacidad: t.capacidad, anio: t.anio, tipo: t.tipo, fabricante: t.fabricante, porcentaje: t.porcentaje
-                })),
-                accesoriosTanque: state.accesoriosByTank,
-                accesoriosRed: state.accesoriosRed,
-                equipos: state.equipos,
-                observaciones: {
-                    "7.1": q("#obs_7_1").value || "",
-                    "7.2": q("#obs_7_2").value || "",
-                    "7.3": q("#obs_7_3").value || "",
-                    "7.4": q("#obs_7_4").value || "",
-                    "7.5": q("#obs_7_5").value || ""
-                }
+        const containerActividades = document.getElementById("containerActividades");
+
+        async function cargarActividadesSegunSlots(){
+            if(!currentSlots.length){
+                await cargarYRenderizarSlots();
+            }
+            containerActividades.innerHTML = "";
+
+            const actividadesSlots = currentSlots.filter(s => s.tipo === "actividad" || (s.code && s.code.startsWith("10.")));
+            actividadesSlots.forEach(s => {
+                const slotKey = s.code.replace(".", "_");
+                const div = document.createElement("div");
+                div.className = "foto-slot";
+                div.id = `actividad_wrap_${slotKey}`;
+
+                div.innerHTML = `
+                    <h3 style="margin:0 0 8px 0;color:var(--accent)">
+                        ${s.code} · ${s.label}
+                    </h3>
+
+                    <div>
+                        <button class="btn-add" onclick="agregarActividad('${slotKey}')">
+                            + Agregar Actividad
+                        </button>
+                    </div>
+
+                    <div id="lista_acts_${slotKey}" style="margin-top:10px"></div>
+                `;
+
+                containerActividades.appendChild(div);
+            });
+        }
+
+        function agregarActividad(slotKey){
+            uploadState.activities[slotKey] = uploadState.activities[slotKey] || {};
+            const actIndex = Object.keys(uploadState.activities[slotKey]).length + 1;
+
+            uploadState.activities[slotKey][actIndex] = { antes: null, despues: null };
+
+            const cont = document.getElementById(`lista_acts_${slotKey}`);
+            const actDiv = document.createElement("div");
+            actDiv.className = "activity-block";
+            actDiv.id = `act_${slotKey}_${actIndex}`;
+
+            actDiv.innerHTML = `
+                <div class="activity-title">(Actividad ${actIndex})</div>
+                <div class="form-row">
+                    <label>Descripción:</label>
+                    <textarea id="desc_${slotKey}_${actIndex}" placeholder="Describa el trabajo realizado"></textarea>
+                </div>
+
+                <div style="display:flex;gap:14px;flex-wrap:wrap">
+                    <div class="slot-upload" id="antes_${slotKey}_${actIndex}">
+                        <div class="slot-title">Foto ANTES</div>
+                        <input type="file" accept="image/png,image/jpeg" onchange="subirAntes('${slotKey}',${actIndex},this.files[0])">
+                    </div>
+
+                    <div class="slot-upload" id="desp_${slotKey}_${actIndex}">
+                        <div class="slot-title">Foto DESPUÉS</div>
+                        <input type="file" accept="image/png,image/jpeg" onchange="subirDespues('${slotKey}',${actIndex},this.files[0])">
+                    </div>
+                </div>
+
+                <div style="margin-top:8px">
+                    <button class="btn-danger" onclick="eliminarActividad('${slotKey}',${actIndex})">Eliminar Actividad</button>
+                </div>
+            `;
+
+            cont.appendChild(actDiv);
+        }
+
+        function subirAntes(slotKey, actIndex, file){
+            if(!validarImagen(file)) return;
+            uploadState.activities[slotKey][actIndex].antes = file;
+            renderPreviewActividad(slotKey, actIndex, "antes");
+        }
+
+        function subirDespues(slotKey, actIndex, file){
+            if(!validarImagen(file)) return;
+            uploadState.activities[slotKey][actIndex].despues = file;
+            renderPreviewActividad(slotKey, actIndex, "despues");
+        }
+
+        function renderPreviewActividad(slotKey, actIndex, tipo){
+            const divId = `${tipo}_${slotKey}_${actIndex}`;
+            const el = document.getElementById(divId);
+            if(!el) return;
+
+            const oldImg = el.querySelector("img"); if(oldImg) oldImg.remove();
+            const oldBtn = el.querySelector(".delete-img"); if(oldBtn) oldBtn.remove();
+
+            const file = uploadState.activities[slotKey][actIndex][tipo];
+            if(!file) return;
+
+            const img = document.createElement("img");
+            img.src = URL.createObjectURL(file);
+            img.style.width = "100%";
+            img.style.height = "90px";
+            img.style.objectFit = "cover";
+            el.appendChild(img);
+
+            const del = document.createElement("button");
+            del.className = "delete-img";
+            del.textContent = "×";
+            del.onclick = (ev)=>{
+                ev.stopPropagation();
+                uploadState.activities[slotKey][actIndex][tipo] = null;
+                renderPreviewActividad(slotKey, actIndex, tipo);
             };
+            el.appendChild(del);
+        }
+
+        function eliminarActividad(slotKey, actIndex){
+            delete uploadState.activities[slotKey][actIndex];
+            const el = document.getElementById(`act_${slotKey}_${actIndex}`);
+            if(el) el.remove();
+        }
+
+        function validarImagen(file){
+            if(!file) return false;
+            const ext = file.name.split(".").pop().toLowerCase();
+            if(!["jpg","jpeg","png"].includes(ext)){
+                alert("Formato no permitido. Debe ser JPG o PNG.");
+                return false;
+            }
+            if(file.size > 6*1024*1024){
+                alert("Archivo excede el límite de 6MB.");
+                return false;
+            }
+            return true;
+        }
+
+        /* ======================================================= */
+        /*   CONSTRUIR PAYLOAD COMPLETO (incluye actividades)      */
+        /* ======================================================= */
+
+        function construirPayloadCompleto(){
+            const payload = construirPayloadBasico();
+
+            payload.actividades = {};
+            for(const slotKey in uploadState.activities){
+                const code = slotKey.replace("_",".");
+                payload.actividades[code] = [];
+                const acts = uploadState.activities[slotKey];
+                for(const actIndex in acts){
+                    const descEl = document.getElementById(`desc_${slotKey}_${actIndex}`);
+                    const descripcion = descEl ? descEl.value : "";
+                    payload.actividades[code].push({
+                        descripcion
+                    });
+                }
+            }
             return payload;
         }
 
-        /* =========================
-           BUILD PAYLOAD FINAL y ENVIAR (multipart/form-data)
-           ========================= */
+        /* ======================================================= */
+        /*   PREPARAR FormData PARA /generar (con imágenes)        */
+        /* ======================================================= */
 
-        document.getElementById("btnGenerate").addEventListener("click", async ()=>{
-            // validar campos obligatorios mínimos
-            if(!q("#c_nombre").value || !q("#c_fecha").value || state.tanques.length === 0){
-                alert("Falta información obligatoria: Nombre, Fecha o al menos 1 tanque.");
-                return;
-            }
-
-            // construir payload completo
-            const payload = buildPayloadForSlots();
-            // agregar actividades al payload
-            payload.actividades = state.actividades;
-
-            // preparar FormData
+        function construirFormData(payload){
             const fd = new FormData();
             fd.append("payload", JSON.stringify(payload));
 
-            // anexar fotos de slots generales
-            Object.keys(state.uploadedPhotos).forEach(slotKey => {
-                const entry = state.uploadedPhotos[slotKey];
-                // images list
-                if(entry.images && Array.isArray(entry.images)){
-                    entry.images.forEach((f, idx) => {
-                        if(!f) return;
-                        // key: photo__<slotKey>__<index>
-                        const key = `photo__${slotKey}__${idx+1}`;
-                        fd.append(key, f, f.name);
-                    });
-                }
-                // activities
-                if(entry.activities){
-                    Object.keys(entry.activities).forEach(actIdx => {
-                        const act = entry.activities[actIdx];
-                        if(act.antes) fd.append(`photo__${slotKey}__act${actIdx}__antes`, act.antes, act.antes.name);
-                        if(act.despues) fd.append(`photo__${slotKey}__act${actIdx}__despues`, act.despues, act.despues.name);
-                    });
-                }
-            });
+            // Adjuntar fotos 9.x
+            for(const slotKey in uploadState.slots){
+                const arr = uploadState.slots[slotKey];
+                if(!arr) continue;
+                arr.forEach((file,idx)=>{
+                    if(!file) return;
+                    const key = `photo__${slotKey}__${idx+1}`;
+                    fd.append(key, file);
+                });
+            }
 
-            // enviar
-            try{
-                const btn = document.getElementById("btnGenerate");
-                btn.disabled = true; btn.innerText = "Generando...";
+            // Adjuntar fotos de actividades 10.x
+            for(const slotKey in uploadState.activities){
+                const acts = uploadState.activities[slotKey];
+                for(const actIndex in acts){
+                    const obj = acts[actIndex];
+                    if(obj.antes){
+                        const keyA = `photo__${slotKey}__act${actIndex}__antes`;
+                        fd.append(keyA, obj.antes);
+                    }
+                    if(obj.despues){
+                        const keyB = `photo__${slotKey}__act${actIndex}__despues`;
+                        fd.append(keyB, obj.despues);
+                    }
+                }
+            }
 
-                const res = await fetch("/generar", { method:"POST", body: fd });
-                if(!res.ok){
-                    const txt = await res.text();
-                    alert("Error en generación: " + txt);
-                    btn.disabled = false; btn.innerText = "Generar Word →";
+            return fd;
+        }
+
+        /* ======================================================= */
+        /*   ENVÍO FINAL: Generar .docx y descargar                */
+        /* ======================================================= */
+
+        let slotsLoaded = false;
+        const btnGenerar = document.getElementById("btnGenerarDoc");
+        const estadoEl = document.getElementById("estadoGeneracion");
+
+        btnGenerar.addEventListener("click", async () => {
+            try {
+                btnGenerar.disabled = true;
+
+                if (!slotsLoaded) {
+                    estadoEl.innerText = "Solicitando subtítulos al servidor...";
+                    await cargarYRenderizarSlots();
+                    await cargarActividadesSegunSlots();
+                    slotsLoaded = true;
+                    estadoEl.innerText = "Subtítulos cargados. Sube las fotos y actividades. Cuando estés listo vuelve a presionar GENERAR.";
+                    btnGenerar.innerText = "Confirmar y Generar documento";
+                    btnGenerar.disabled = false;
                     return;
                 }
+
+                estadoEl.innerText = "Preparando documento...";
+                const nombre = document.getElementById("c_nombre").value || "";
+                const fecha = document.getElementById("c_fecha").value || "";
+                const tanquesCount = document.querySelectorAll(".tank-block").length;
+                if (!nombre || !fecha || tanquesCount === 0) {
+                    alert("Faltan datos obligatorios: Nombre, Fecha o al menos 1 tanque.");
+                    btnGenerar.disabled = false;
+                    return;
+                }
+
+                const payload = construirPayloadCompleto();
+                const fd = construirFormData(payload);
+
+                estadoEl.innerText = "Enviando datos al servidor (esto puede tardar)...";
+                btnGenerar.innerText = "Generando...";
+
+                const res = await fetch("/generar", {
+                    method: "POST",
+                    body: fd
+                });
+
+                if (!res.ok) {
+                    let txt;
+                    try { txt = await res.json(); } catch { txt = await res.text(); }
+                    console.error("Error respuesta /generar", txt);
+                    alert("Error generando documento: " + (typeof txt === "string" ? txt : JSON.stringify(txt)));
+                    estadoEl.innerText = "Error en generación. Revisa la consola.";
+                    btnGenerar.innerText = "Confirmar y Generar documento";
+                    btnGenerar.disabled = false;
+                    return;
+                }
+
                 const blob = await res.blob();
+                const filenameHeader = res.headers.get("Content-Disposition") || "";
+                let suggestedName = "Informe_Mantenimiento.docx";
+                try {
+                    const m = /filename="?([^"]+)"?/.exec(filenameHeader);
+                    if (m && m[1]) suggestedName = m[1];
+                } catch (e) { }
+
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement("a");
                 a.href = url;
-                a.download = "Informe_Mantenimiento.docx";
+                a.download = suggestedName;
                 document.body.appendChild(a);
                 a.click();
                 a.remove();
                 URL.revokeObjectURL(url);
-                btn.disabled = false; btn.innerText = "Generar Word →";
-                alert("Documento generado y descargado.");
-            }catch(err){
-                console.error(err);
-                alert("Error al enviar archivos: " + err.message);
-                document.getElementById("btnGenerate").disabled = false;
-                document.getElementById("btnGenerate").innerText = "Generar Word →";
+
+                estadoEl.innerText = "Documento generado y descargado correctamente.";
+                btnGenerar.innerText = "Generar documento";
+                btnGenerar.disabled = false;
+
+            } catch (err) {
+                console.error("Error en generación:", err);
+                alert("Error inesperado: " + err.message);
+                estadoEl.innerText = "Error inesperado. Revisa la consola.";
+                btnGenerar.disabled = false;
+                btnGenerar.innerText = "Confirmar y Generar documento";
             }
         });
 
-        /* =========================
-           INIT / RENDER ALL
-           ========================= */
+        // Doble click en título limpia uploads (utilidad)
+        try {
+            document.querySelector("h1").addEventListener("dblclick", ()=> {
+                if(confirm("¿Limpiar archivos cargados?")) {
+                    uploadState.slots = {};
+                    uploadState.activities = {};
+                    document.querySelectorAll("[id^='slot_upload_']").forEach(el=>{
+                        const img = el.querySelector("img"); if(img) img.remove();
+                        const btn = el.querySelector(".delete-img"); if(btn) btn.remove();
+                    });
+                    document.querySelectorAll("[id^='antes_'], [id^='desp_']").forEach(el=>{
+                        const img = el.querySelector("img"); if(img) img.remove();
+                        const btn = el.querySelector(".delete-img"); if(btn) btn.remove();
+                    });
+                    estadoEl.innerText = "Archivos borrados.";
+                }
+            });
+        } catch(e){/* ignore */}
 
-        function renderAll(){
-            // llenar inputs generales
-            q("#c_nombre").value = state.general["Nombre o razón social del cliente"] || state.general.nombre || "";
-            q("#c_fecha").value = state.general["Fecha de inspección"] || "";
-            q("#c_direccion").value = state.general["Dirección"] || "";
-            q("#c_doc").value = state.general["RUC o DNI"] || "";
-            q("#c_instalacion").value = state.general["Número de instalación"] || "";
-            q("#c_distrito").value = state.general["Distrito"] || "";
-            q("#c_departamento").value = state.general["Departamento"] || "";
-            q("#c_coordenadas").value = state.general["Coordenadas"] || "";
-            q("#c_contacto").value = state.general["Nombre del contacto"] || "";
-            q("#c_num_contacto").value = state.general["Número del contacto"] || "";
-            q("#c_correo").value = state.general["Correo de contacto"] || "";
-
-            // observaciones
-            q("#obs_7_1").value = state.observaciones["7.1"] || "";
-            q("#obs_7_2").value = state.observaciones["7.2"] || "";
-            q("#obs_7_3").value = state.observaciones["7.3"] || "";
-            q("#obs_7_4").value = state.observaciones["7.4"] || "";
-            q("#obs_7_5").value = state.observaciones["7.5"] || "";
-
-            renderTanques();
-            renderAccesoriosRed();
-            renderEquipos();
-            renderActividadesUI();
-        }
-
-        // cargar al iniciar si hay draft
-        if(localStorage.getItem("informe_solgas_v1")){
-            // no cargar automáticamente, esperar acción del usuario
-        }
-
-        // init minimal
-        renderAll();
     </script>
+
 </body>
 </html>
