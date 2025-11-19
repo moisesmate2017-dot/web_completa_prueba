@@ -1,4 +1,3 @@
-<!-- Inicio del archivo corregido (basado en last_version.txt) -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -10,7 +9,6 @@
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
 
 <style>
-/* === (mantuve tu CSS exactamente como en el archivo original) === */
 :root{
   --bg-1:#030419;
   --bg-2:#042133;
@@ -173,16 +171,13 @@ td.accesorio {
         <div style="width:56px;height:56px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--gold));display:flex;align-items:center;justify-content:center;color:#041218;font-weight:800">SG</div>
         <div>
           <div class="login-title">Acceso - SOLGAS</div>
-          <div class="login-sub">Ingresa con tu correo corporativo y el nombre de empresa.</div>
+          <div class="login-sub">Ingresa con tu correo corporativo.</div>
         </div>
       </div>
 
       <div style="margin-top:12px">
         <div class="label">Correo corporativo</div>
         <div class="login-field field"><input id="loginEmail" type="email" placeholder="usuario@solgas.com.pe"></div>
-
-        <div class="label" style="margin-top:8px">Empresa</div>
-        <div class="login-field field"><input id="loginCompany" type="text" placeholder="Solgas"></div>
 
         <div class="login-err" id="loginErr" style="display:none"></div>
 
@@ -710,77 +705,64 @@ td.accesorio {
      ========================== -->
 <script>
 /*
-  Este script agrega las variables y funciones que faltaban en la PARTE 1/2
-  para evitar los errores: updateTankSelectOptions, doLogin, nextStep, equipos undefined, etc.
-  Está pensado para integrarse con el HTML que subiste (last_version.txt).  [oai_citation:2‡last_version.txt](sediment://file_00000000bfb071f5a619a7077016dd51)
+  Script agregado para inicializar variables antes de su uso y añadir funciones faltantes.
+  Login validado mediante allowedEmails (sin password) según tu pedido.
 */
 
-/* ---------- Estado global (inicializaciones mínimas) ---------- */
-let tanks = [];         // array de objetos tanque
-let equipos = [];       // array de objetos equipo
-let redes = [];         // accesorios en redes
-let actividades = actividades || {}; // ya puede existir en tu script; si no, lo usamos
-let bloquesFotosCache = bloquesFotosCache || [
-  // Mock: si tu backend no responde, esto evita tabla vacía (ajusta a tu servidor)
-  {clave:'foto_01_tanque', titulo:'Tanque - Vista general', fotos:1, aplica:true},
-  {clave:'foto_10_red_llenado_retorno', titulo:'Actividad en red - antes/despues', fotos:2, aplica:true}
+/* ---------- Inicializaciones globales (deben existir antes de cualquier uso) ---------- */
+let actividades = {};         // mapa: 'tank1' -> [ {descripcion, antesFiles, despuesFiles}, ... ]
+let allowedEmails = [
+    "moises@empresa.com",
+    "inspector@empresa.com",
+    "soporte@empresa.com",
+    "admin@empresa.com"
 ];
-let uploadedPhotos = uploadedPhotos || {}; // mapa clave -> [File,...]
+let equipos = [];
+let tanks = [];
+let redes = [];
+let bloquesFotosCache = [];   // se poblará con fetchBloquesFotos o con mock
+let uploadedPhotos = {};      // mapa clave -> [File,...]
 let currentStep = 1;
 const TOTAL_STEPS = 7;
 
-/* ---------- Login simple (puedes reemplazar con la lógica real) ---------- */
-// Variables permitidas de ejemplo (reemplázalas por tu verificación real)
-let allowedEmails = allowedEmails || ['usuario@solgas.com.pe','test@solgas.com.pe'];
-let allowedPasswords = allowedPasswords || {'usuario@solgas.com.pe':'pass123','test@solgas.com.pe':'test'};
-
+/* ---------- Login (solo correo permitido, sin password) ---------- */
 function doLogin(){
   const email = (document.getElementById('loginEmail').value || '').trim();
-  const company = (document.getElementById('loginCompany').value || '').trim();
   const err = document.getElementById('loginErr');
 
-  if(!email || !company){
-    err.innerText = 'Completa ambos campos.';
+  if(!email){
+    err.innerText = 'Ingresa un correo.';
     err.style.display = 'block';
     return;
   }
 
-  // Si tienes validación real, cámbiala aquí. Por ahora permitimos cualquier email que contenga '@'
-  if(typeof allowedEmails !== 'undefined' && Array.isArray(allowedEmails)){
-    if(!allowedEmails.includes(email)){
-      // permitir también si contiene @solgas.com.pe (fallback)
-      if(!email.endsWith('@solgas.com.pe')){
-        err.innerText = 'Correo no autorizado.';
-        err.style.display = 'block';
-        return;
-      }
-    }
+  if(!allowedEmails.includes(email)){
+    err.innerText = 'Correo no autorizado.';
+    err.style.display = 'block';
+    return;
   }
 
   err.style.display = 'none';
   document.getElementById('loginOverlay').style.display = 'none';
-  // mostrar app (en tu HTML ya está visible por defecto)
   document.getElementById('mainContainer').style.display = 'block';
   document.getElementById('sidebarEmail').innerText = email;
-  document.getElementById('sidebarCompany').innerText = company;
-  const initials = (company.split(' ').map(s=>s[0]||'').join('').slice(0,2) || 'SG').toUpperCase();
-  document.getElementById('userInitials').innerText = initials;
+  document.getElementById('userInitials').innerText =
+    (email.split('@')[0].slice(0,2) || 'SG').toUpperCase();
 }
 
 function loginCancel(){
-  // recargar o ocultar overlay
+  // Oculta overlay o recarga
   document.getElementById('loginOverlay').style.display = 'none';
 }
 
-/* ---------- Navegación multi-step ---------- */
+/* ---------- Navegación multi-step (básica y segura) ---------- */
 function showStep(n){
-  if(n <1) n=1;
+  if(typeof n !== 'number') n = parseInt(n) || 1;
+  if(n < 1) n = 1;
   if(n > TOTAL_STEPS) n = TOTAL_STEPS;
-  // ocultar todos
   for(let i=1;i<=TOTAL_STEPS;i++){
     const el = document.getElementById(`step-${i}`);
     if(el) el.classList.remove('active');
-    // actualizar navlist active
     const nav = document.querySelector(`.nav-item[data-step="${i}"]`);
     if(nav) nav.classList.remove('active');
   }
@@ -791,9 +773,8 @@ function showStep(n){
   currentStep = n;
   updateTopProgress();
 
-  // if entering step 7, build photo table
   if(n === 7){
-    // ensure bloquesFotosCache is loaded (llama a fetchBloquesFotos si existe)
+    // reconstruir tabla de fotos
     if(typeof fetchBloquesFotos === 'function'){
       fetchBloquesFotos().then(()=>{ if(typeof buildPhotoTable === 'function') buildPhotoTable(); });
     } else {
@@ -803,18 +784,10 @@ function showStep(n){
 }
 
 function nextStep(){
-  // puedes añadir validaciones por paso aquí si quieres
   if(currentStep < TOTAL_STEPS) showStep(currentStep + 1);
 }
-
-function prevStep(){
-  if(currentStep > 1) showStep(currentStep - 1);
-}
-
-function navTo(n){
-  showStep(n);
-}
-
+function prevStep(){ if(currentStep > 1) showStep(currentStep - 1); }
+function navTo(n){ showStep(n); }
 function updateTopProgress(){
   const bar = document.getElementById('topProgress');
   const pct = ((currentStep - 1) / (TOTAL_STEPS - 1)) * 100;
@@ -823,15 +796,13 @@ function updateTopProgress(){
   if(lbl) lbl.innerText = `${currentStep} / ${TOTAL_STEPS}`;
 }
 
-/* ---------- Manejo de Tanques (mínimo funcional) ---------- */
+/* ---------- Tanques (mínimo funcional) ---------- */
 function clearTankForm(){
-  document.getElementById('tank_serie').value = '';
-  document.getElementById('tank_capacidad').value = '';
-  document.getElementById('tank_anio').value = '';
-  document.getElementById('tank_tipo').value = '';
-  document.getElementById('tank_fabricante').value = '';
-  document.getElementById('tank_porcentaje').value = '';
-  document.getElementById('err-tank').innerText = '';
+  ['tank_serie','tank_capacidad','tank_anio','tank_tipo','tank_fabricante','tank_porcentaje'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.value = '';
+  });
+  const err = document.getElementById('err-tank'); if(err) err.innerText = '';
 }
 
 function saveTank(){
@@ -843,19 +814,11 @@ function saveTank(){
   const porcentaje = (document.getElementById('tank_porcentaje').value || '').trim();
 
   if(!serie || !tipo){
-    document.getElementById('err-tank').innerText = 'N° de serie y Tipo son obligatorios.';
+    const err = document.getElementById('err-tank'); if(err) err.innerText = 'N° de serie y Tipo son obligatorios.';
     return;
   }
 
-  // agregar tanque
-  const t = {
-    "N° de serie": serie,
-    "Capacidad": capacidad,
-    "Año": anio,
-    "Tipo": tipo,
-    "Fabricante": fabricante,
-    "Porcentaje": porcentaje
-  };
+  const t = {"N° de serie": serie, "Capacidad": capacidad, "Año": anio, "Tipo": tipo, "Fabricante": fabricante, "Porcentaje": porcentaje};
   tanks.push(t);
   renderTanksList();
   clearTankForm();
@@ -864,15 +827,16 @@ function saveTank(){
 
 function renderTanksList(){
   const el = document.getElementById('tanksList');
+  if(!el) return;
   el.innerHTML = '';
   if(tanks.length === 0){
     el.innerHTML = '<div class="small">No hay tanques añadidos.</div>';
     document.getElementById('status-2').innerText = '0 tanques';
+    updateTankSelectOptions();
     return;
   }
   tanks.forEach((t,i)=>{
-    const div = document.createElement('div');
-    div.className = 'tank-card';
+    const div = document.createElement('div'); div.className = 'tank-card';
     div.innerHTML = `<div class="tank-info">
       <div><strong>Tanque ${i+1}</strong></div>
       <div>Serie: ${t["N° de serie"] || '-'}</div>
@@ -888,33 +852,19 @@ function renderTanksList(){
       </div>
     </div>`;
     el.appendChild(div);
-
-    // ensure activities container exists
-    const activitiesContainerId = `activitiesTankList_${i+1}`;
-    let actEl = document.getElementById(activitiesContainerId);
-    if(!actEl){
-      actEl = document.createElement('div');
-      actEl.id = activitiesContainerId;
-      actEl.style.marginTop = '6px';
-      el.appendChild(actEl);
-    }
-    renderActivitiesForTankList(i+1);
   });
   document.getElementById('status-2').innerText = `${tanks.length} tanques`;
-  // update select_tanque options
   updateTankSelectOptions();
 }
 
 function editTank(i){
-  const t = tanks[i];
-  if(!t) return;
+  const t = tanks[i]; if(!t) return;
   document.getElementById('tank_serie').value = t["N° de serie"] || '';
   document.getElementById('tank_capacidad').value = t["Capacidad"] || '';
   document.getElementById('tank_anio').value = t["Año"] || '';
   document.getElementById('tank_tipo').value = t["Tipo"] || '';
   document.getElementById('tank_fabricante').value = t["Fabricante"] || '';
   document.getElementById('tank_porcentaje').value = t["Porcentaje"] || '';
-  // remove old and let saveTank push again (simple approach)
   tanks.splice(i,1);
   renderTanksList();
 }
@@ -935,29 +885,30 @@ function clearTanks(){
 
 /* ---------- Equipos (mínimo funcional) ---------- */
 function clearEquipoForm(){
-  document.getElementById('eq_tipo').value = '';
-  document.getElementById('eq_name').value = '';
-  // eliminar campos dinámicos si existen
-  const df = document.getElementById('dynamicFields');
-  if(df) df.innerHTML = '';
+  const eqTipo = document.getElementById('eq_tipo'); if(eqTipo) eqTipo.value = '';
+  const eqName = document.getElementById('eq_name'); if(eqName) eqName.value = '';
+  const df = document.getElementById('dynamicFields'); if(df) df.innerHTML = '';
 }
 
-document.getElementById('eq_tipo').addEventListener && document.getElementById('eq_tipo').addEventListener('change', function(){
-  const t = this.value || '';
-  const nameInput = document.getElementById('eq_name');
-  if(!nameInput) return;
-  if(!t) { nameInput.value = ''; return; }
-  // generar nombre simple
-  const count = equipos.filter(e=>e.Tipo === t).length + 1;
-  nameInput.value = `${t}_${count}`;
+document.addEventListener('DOMContentLoaded', function(){
+  const eqTipo = document.getElementById('eq_tipo');
+  if(eqTipo){
+    eqTipo.addEventListener('change', function(){
+      const t = this.value || '';
+      const nameInput = document.getElementById('eq_name');
+      if(!nameInput) return;
+      if(!t) { nameInput.value = ''; return; }
+      const count = equipos.filter(e=>e.Tipo === t).length + 1;
+      nameInput.value = `${t}_${count}`;
+    });
+  }
 });
 
 function addEquipo(){
   const tipo = (document.getElementById('eq_tipo').value || '').trim();
   const name = (document.getElementById('eq_name').value || '').trim();
   if(!tipo || !name){ alert('Selecciona tipo y asegúrate que se genere el nombre.'); return; }
-  const obj = { Tipo: tipo, Equipo: name };
-  equipos.push(obj);
+  equipos.push({Tipo: tipo, Equipo: name});
   renderEquiposList();
   updateEquipoSelects();
   onTanksOrEquiposChanged();
@@ -966,6 +917,7 @@ function addEquipo(){
 
 function renderEquiposList(){
   const c = document.getElementById('equiposList');
+  if(!c) return;
   c.innerHTML = '';
   if(equipos.length === 0){ c.innerHTML = '<div class="small">No hay equipos agregados.</div>'; return; }
   equipos.forEach((eq,i)=>{
@@ -981,8 +933,7 @@ function renderEquiposList(){
 }
 
 function editEquipo(i){
-  const eq = equipos[i];
-  if(!eq) return;
+  const eq = equipos[i]; if(!eq) return;
   document.getElementById('eq_tipo').value = eq.Tipo || '';
   document.getElementById('eq_name').value = eq.Equipo || '';
   equipos.splice(i,1);
@@ -998,7 +949,7 @@ function deleteEquipo(i){
   onTanksOrEquiposChanged();
 }
 
-/* ---------- updateEquipoSelects (ya lo esperabas en tu Parte2) ---------- */
+/* ---------- Selects update ---------- */
 function updateEquipoSelects(){
   const sel = document.getElementById('select_eq_for_activity');
   if(!sel) return;
@@ -1010,7 +961,6 @@ function updateEquipoSelects(){
   });
 }
 
-/* ---------- updateTankSelectOptions (falta en tu archivo original) ---------- */
 function updateTankSelectOptions(){
   const select = document.getElementById('select_tanque');
   if(!select) return;
@@ -1024,20 +974,48 @@ function updateTankSelectOptions(){
   });
 }
 
-/* ---------- onTanksOrEquiposChanged (tu archivo ya lo llama; lo usamos para re-sincronizar) ---------- */
 function onTanksOrEquiposChanged(){
-  try{
-    updateTankSelectOptions();
-  }catch(e){}
+  try{ updateTankSelectOptions(); }catch(e){}
   try{ updateEquipoSelects(); }catch(e){}
-  // render activities per tank
   tanks.forEach((t,i)=> renderActivitiesForTankList(i+1) );
 }
 
-/* ---------- REDES (ya tenías funciones, solo nos aseguramos de la variable) ---------- */
-redes = redes || [];
+/* ---------- Redes y actividades (sketch mínimo para que no rompa) ---------- */
+function addRed(){
+  const tipo = document.getElementById('red_tipo').value;
+  const marca = document.getElementById('red_marca').value;
+  const serie = document.getElementById('red_serie').value;
+  const codigo = document.getElementById('red_codigo').value;
+  const mesano = document.getElementById('red_mesano').value;
+  if(!tipo){
+    alert('Selecciona tipo de accesorio');
+    return;
+  }
+  redes.push({tipo,marca,serie,codigo,mesano});
+  renderRedList();
+  clearRedForm();
+}
+
+function clearRedForm(){
+  ['red_tipo','red_marca','red_serie','red_codigo','red_mesano'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+}
+
+function renderRedList(){
+  const el = document.getElementById('redList'); if(!el) return;
+  el.innerHTML = '';
+  if(redes.length === 0){ el.innerHTML = '<div class="small">No hay accesorios en redes.</div>'; return; }
+  redes.forEach((r,i)=>{
+    const div = document.createElement('div'); div.className='tank-card';
+    div.innerHTML = `<div style="font-weight:700">${i+1}. ${humanReadableTipo(r.tipo)}</div>
+      <div style="display:flex;gap:8px">
+        <button class="btn small ghost" onclick="editRed(${i})">Editar</button>
+        <button class="btn small danger" onclick="deleteRed(${i})">Borrar</button>
+      </div>`;
+    el.appendChild(div);
+  });
+}
+
 function humanReadableTipo(tipo){
-  // Mapea tipos a textos legibles (puedes extender)
   const map = {
     'llenado_toma_desplazada':'Válvula de llenado (toma desplazada)',
     'retorno_toma_desplazada':'Válvula de retorno (toma desplazada)',
@@ -1053,27 +1031,86 @@ function humanReadableTipo(tipo){
   return map[tipo] || tipo;
 }
 
-/* ---------- Actividades (ya implementadas en tu archivo) ----------
-   Nos aseguramos de que renderActivities... estén definidas (las tienes arriba en tu script cargado),
-   pero si faltara algo, las definimos mínimas (ya están en tu archivo original). 
-*/
+function editRed(i){
+  const r = redes[i]; if(!r) return;
+  document.getElementById('red_tipo').value = r.tipo || '';
+  document.getElementById('red_marca').value = r.marca || '';
+  document.getElementById('red_serie').value = r.serie || '';
+  document.getElementById('red_codigo').value = r.codigo || '';
+  document.getElementById('red_mesano').value = r.mesano || '';
+  redes.splice(i,1);
+  renderRedList();
+}
+function deleteRed(i){ if(!confirm('Eliminar accesorio?')) return; redes.splice(i,1); renderRedList(); }
 
-/* ---------- Fotos / Step 7: fetchBloquesFotos (cliente) ---------- */
-async function fetchBloquesFotos(){
-  // Si tienes endpoint real, reemplaza por fetch('/bloques_fotos', ...) y procesa JSON
-  // Por ahora usamos bloquesFotosCache (mock) si está vacío
-  if(!bloquesFotosCache || bloquesFotosCache.length === 0){
-    bloquesFotosCache = [
-      {clave:'foto_01_tanque', titulo:'Tanque - Vista general', fotos:1, aplica:true},
-      {clave:'foto_02_válvula', titulo:'Válvula - detalle', fotos:1, aplica:true},
-      {clave:'foto_10_red_llenado_retorno', titulo:'Actividades red - antes/despues', fotos:2, aplica:true}
-    ];
-  }
-  // devuelve para permitir await
-  return Promise.resolve(bloquesFotosCache);
+/* ---------- Actividades por tanks/red/equipos (mínimo) ---------- */
+function addActivityToTank(tankIndex){
+  const key = `tank${tankIndex}`;
+  const desc = prompt('Descripción actividad para el tanque:');
+  if(!desc) return;
+  actividades[key] = actividades[key] || [];
+  actividades[key].push({descripcion: desc});
+  renderActivitiesForTankList(tankIndex);
+  buildActivitiesUploadArea && buildActivitiesUploadArea(document.getElementById('photoContainer'));
 }
 
-/* --------- Resize utilities (tu código ya tiene estas funciones encima; si no, las definimos básicas) --------- */
+function renderActivitiesForTankList(tankIndex){
+  const containerId = `activitiesTankList_${tankIndex}`;
+  let cont = document.getElementById(containerId);
+  if(!cont){
+    cont = document.createElement('div'); cont.id = containerId; const tanksList = document.getElementById('tanksList'); if(tanksList) tanksList.appendChild(cont);
+  }
+  const key = `tank${tankIndex}`;
+  const arr = actividades[key] || [];
+  cont.innerHTML = '';
+  if(arr.length === 0) { cont.innerHTML = ''; return; }
+  arr.forEach((a,idx)=>{
+    const d = document.createElement('div'); d.style.marginTop='6px';
+    d.innerHTML = `<div style="font-weight:700;color:#fff">${idx+1}. ${a.descripcion || ''}</div>`;
+    cont.appendChild(d);
+  });
+}
+
+/* addActivityToRed & addActivityToEquipo minimal */
+function addActivityToRed(){
+  const sel = document.getElementById('select_red_for_activity'); if(!sel) return;
+  const val = sel.value; if(!val) { alert('Selecciona red'); return; }
+  const desc = (document.getElementById('activity_red_desc').value || '').trim();
+  if(!desc){ alert('Describe la actividad'); return; }
+  actividades[val] = actividades[val] || [];
+  actividades[val].push({descripcion: desc});
+  renderActivitiesRedList();
+  buildActivitiesUploadArea && buildActivitiesUploadArea(document.getElementById('photoContainer'));
+}
+function renderActivitiesRedList(){
+  const el = document.getElementById('activitiesRedList'); if(!el) return;
+  el.innerHTML = '';
+  Object.keys(actividades).forEach(k=>{
+    if(!k.startsWith('red')) return;
+  });
+  const arr = actividades['red_llenado_retorno'] || [];
+  if(arr.length === 0) el.innerHTML = '<div class="small">No hay actividades en redes.</div>';
+  else arr.forEach((a,i)=>{ const div=document.createElement('div'); div.className='tank-card'; div.innerHTML=`<div>${i+1}. ${a.descripcion}</div>`; el.appendChild(div); });
+}
+
+function addActivityToEquipo(){
+  const sel = document.getElementById('select_eq_for_activity'); if(!sel) return;
+  const val = sel.value; if(!val) { alert('Selecciona equipo'); return; }
+  const desc = (document.getElementById('activity_eq_desc').value || '').trim(); if(!desc){ alert('Describe la actividad'); return; }
+  actividades[val] = actividades[val] || [];
+  actividades[val].push({descripcion: desc});
+  renderActivitiesEquipoList();
+  buildActivitiesUploadArea && buildActivitiesUploadArea(document.getElementById('photoContainer'));
+}
+function renderActivitiesEquipoList(){
+  const el = document.getElementById('activitiesEquipoList'); if(!el) return;
+  el.innerHTML = '';
+  const arr = actividades['equipo_1'] || [];
+  if(arr.length === 0) el.innerHTML = '<div class="small">No hay actividades por equipo.</div>';
+  else arr.forEach((a,i)=>{ const div=document.createElement('div'); div.className='tank-card'; div.innerHTML=`<div>${i+1}. ${a.descripcion}</div>`; el.appendChild(div); });
+}
+
+/* ---------- Imagenes: utilidades de resize (mínimas) ---------- */
 const TARGET_W = 1500;
 const TARGET_H = 1000;
 function fileToImage(file){
@@ -1112,10 +1149,20 @@ function resizeImageToTarget(file){
   });
 }
 
-/* ---------- Construcción de tabla de fotos (se integra con tu buildPhotoTable si ya existe) ---------- */
+/* ---------- Bloques de fotos (fetch mock/real) ---------- */
+async function fetchBloquesFotos(){
+  if(!bloquesFotosCache || bloquesFotosCache.length === 0){
+    bloquesFotosCache = [
+      {clave:'foto_01_tanque', titulo:'Tanque - Vista general', fotos:1, aplica:true},
+      {clave:'foto_02_válvula', titulo:'Válvula - detalle', fotos:1, aplica:true},
+      {clave:'foto_10_red_llenado_retorno', titulo:'Actividades red - antes/despues', fotos:2, aplica:true}
+    ];
+  }
+  return Promise.resolve(bloquesFotosCache);
+}
+
+/* ---------- Construcción de tabla de fotos ---------- */
 function buildPhotoTable(){
-  // Si ya tienes una implementación en tu código, podrías usarla. Esta es una versión mínima que
-  // respeta la estructura que esperas (inputs ocultos, botones, previews)
   const container = document.getElementById('photoContainer');
   if(!container) return;
   container.innerHTML = '';
@@ -1146,8 +1193,7 @@ function buildPhotoTable(){
     const badge = document.createElement('span'); badge.className='badge-state badge-red'; badge.innerText='Sin subir';
     tdStatus.appendChild(badge);
 
-    const tdAction = document.createElement('td');
-    tdAction.className = 'photo-action';
+    const tdAction = document.createElement('td'); tdAction.className = 'photo-action';
     const input = document.createElement('input'); input.type='file'; input.accept='image/*';
     if(block.fotos && block.fotos > 1) input.multiple = true;
     input.className = 'file-input-hidden';
@@ -1174,10 +1220,7 @@ function buildPhotoTable(){
     btnView.addEventListener('click', ()=>{
       const list = uploadedPhotos[block.clave] || [];
       if(!list.length) { alert('No hay imágenes.'); return; }
-      list.forEach(f=>{
-        const url = URL.createObjectURL(f);
-        window.open(url);
-      });
+      list.forEach(f=>{ const url = URL.createObjectURL(f); window.open(url); });
     });
 
     tdAction.appendChild(input); tdAction.appendChild(btn); tdAction.appendChild(btnView); tdAction.appendChild(previewWrap);
@@ -1189,11 +1232,9 @@ function buildPhotoTable(){
   table.appendChild(tbody);
   container.appendChild(table);
 
-  // also build activities upload area if there are activities
-  if(typeof buildActivitiesUploadArea === 'function'){ buildActivitiesUploadArea(container); }
+  if(typeof buildActivitiesUploadArea === 'function') buildActivitiesUploadArea(container);
 }
 
-/* updatePhotoRowStatus (pequeña utilidad) */
 function updatePhotoRowStatus(clave, trElem, badgeElem, fotosNecesarias){
   const files = uploadedPhotos[clave] || [];
   const n = Array.isArray(files) ? files.length : 0;
@@ -1215,6 +1256,77 @@ function updatePhotoRowStatus(clave, trElem, badgeElem, fotosNecesarias){
   }
 }
 
+/* ---------- Activities upload area (10.X) ---------- */
+function buildActivitiesUploadArea(container){
+  const existing = document.getElementById('activitiesUploadWrapper'); if(existing) existing.remove();
+  const wrapper = document.createElement('div'); wrapper.id = 'activitiesUploadWrapper'; wrapper.style.marginTop = '14px';
+  wrapper.innerHTML = `<div class="card-header"><div><div class="card-title">10 · Trabajos realizados (Actividades) — Subida ANTES / DESPUÉS</div><div class="hint">Para cada actividad sube la(s) foto(s) ANTES y DESPUÉS. Las claves se asignan automáticamente.</div></div></div>`;
+  Object.keys(actividades).forEach(key => {
+    const arr = actividades[key] || [];
+    if(!arr || !arr.length) return;
+    const sec = document.createElement('div'); sec.style.marginTop = '10px';
+    const human = key.startsWith('tank') ? `Tanque ${key.replace('tank','')}` : (key.startsWith('red_') ? (key==='red_llenado_retorno' ? 'Red Llenado/Retorno' : 'Red Consumo') : key);
+    sec.innerHTML = `<div style="font-weight:800;margin-bottom:6px;color:#fff">${human}</div>`;
+    arr.forEach((act, aidx) => {
+      const card = document.createElement('div'); card.className = 'photo-card'; card.style.display = 'grid'; card.style.gridTemplateColumns = '1fr 1fr 1fr'; card.style.gap = '8px'; card.style.alignItems = 'start';
+      const descDiv = document.createElement('div'); descDiv.innerHTML = `<div style="font-weight:700;color:#004085">${aidx+1}. ${act.descripcion}</div><div class="small-muted">Clave base: ${key} — actividad ${aidx+1}</div>`;
+      const beforeCol = document.createElement('div'); beforeCol.innerHTML = `<div class="label">ANTES</div>`; const inpBefore = document.createElement('input'); inpBefore.type='file'; inpBefore.accept='image/*'; inpBefore.multiple = true; inpBefore.style.marginTop='6px'; const prevB = document.createElement('div'); prevB.style.display='flex'; prevB.style.gap='6px'; prevB.style.marginTop='6px'; beforeCol.appendChild(inpBefore); beforeCol.appendChild(prevB);
+      const afterCol = document.createElement('div'); afterCol.innerHTML = `<div class="label">DESPUÉS</div>`; const inpAfter = document.createElement('input'); inpAfter.type='file'; inpAfter.accept='image/*'; inpAfter.multiple = true; inpAfter.style.marginTop='6px'; const prevA = document.createElement('div'); prevA.style.display='flex'; prevA.style.gap='6px'; prevA.style.marginTop='6px'; afterCol.appendChild(inpAfter); afterCol.appendChild(prevA);
+
+      inpBefore.addEventListener('change', async (ev)=>{
+        const files = Array.from(ev.target.files || []);
+        prevB.innerHTML = '';
+        const processed = [];
+        for(const f of files){
+          const thumb = document.createElement('img'); thumb.style.width='120px'; thumb.style.height='80px'; thumb.style.objectFit='cover';
+          thumb.src = URL.createObjectURL(f);
+          prevB.appendChild(thumb);
+          try{ const resized = await resizeImageToTarget(f); processed.push(resized); }catch(e){ processed.push(f); }
+        }
+        act.antesFiles = processed;
+        const aIdxOne = aidx+1;
+        const claveBase = key.replace(/^tank/,'tank');
+        const clave = `foto_10_${claveBase}_act${aIdxOne}__antes`;
+        uploadedPhotos[clave] = processed;
+        updateTableCellsStatusFromUploads();
+      });
+
+      inpAfter.addEventListener('change', async (ev)=>{
+        const files = Array.from(ev.target.files || []);
+        prevA.innerHTML = '';
+        const processed = [];
+        for(const f of files){
+          const thumb = document.createElement('img'); thumb.style.width='120px'; thumb.style.height='80px'; thumb.style.objectFit='cover';
+          thumb.src = URL.createObjectURL(f);
+          prevA.appendChild(thumb);
+          try{ const resized = await resizeImageToTarget(f); processed.push(resized); }catch(e){ processed.push(f); }
+        }
+        act.despuesFiles = processed;
+        const aIdxOne = aidx+1;
+        const claveBase = key.replace(/^tank/,'tank');
+        const clave = `foto_10_${claveBase}_act${aIdxOne}__despues`;
+        uploadedPhotos[clave] = processed;
+        updateTableCellsStatusFromUploads();
+      });
+
+      card.appendChild(descDiv); card.appendChild(beforeCol); card.appendChild(afterCol);
+      sec.appendChild(card);
+    });
+    wrapper.appendChild(sec);
+  });
+  container.appendChild(wrapper);
+}
+
+/* ---------- Sincronización badges desde uploadedPhotos ---------- */
+function updateTableCellsStatusFromUploads(){
+  const rows = document.querySelectorAll('#photoContainer table.photo-table tbody tr');
+  rows.forEach(tr=>{
+    const clave = tr.dataset.clave; if(!clave) return;
+    const badge = tr.querySelector('.badge-state');
+    updatePhotoRowStatus(clave, tr, badge, (bloquesFotosCache.find(b=>b.clave===clave)||{}).fotos);
+  });
+}
+
 /* ---------- Utilidades generales ---------- */
 function resetApp(){
   if(!confirm('Reiniciar la aplicación (limpiará datos en memoria)?')) return;
@@ -1222,11 +1334,9 @@ function resetApp(){
   renderTanksList(); renderEquiposList(); renderRedList();
   updateEquipoSelects(); updateTankSelectOptions();
   showStep(1);
-  // mostrar overlay login si quieres:
-  // document.getElementById('loginOverlay').style.display = 'flex';
 }
 
-/* ---------- Hook inicial para renderizar estado vacío ---------- */
+/* ---------- Render inicial ---------- */
 document.addEventListener('DOMContentLoaded', function(){
   renderTanksList();
   renderEquiposList();
@@ -1234,16 +1344,16 @@ document.addEventListener('DOMContentLoaded', function(){
   updateEquipoSelects();
   updateTankSelectOptions();
   updateTopProgress();
-  // Build photo table if the user is already in step 7
   if(currentStep === 7 && typeof buildPhotoTable === 'function') buildPhotoTable();
 });
 
-/* ---------- Stubs que tu código ya tiene en otras partes (no sobrescriben) ---------- */
-/* Si tus funciones originales están declaradas en otros bloques, estas definiciones
-   no interferirán con ellas ya que usan nombres globales compatibles. */
+/* ---------- Render placeholder functions (si tu original tiene más, reemplazalas) ---------- */
+function renderRedList(){ renderRedList; } // queda a tu implementación completa
+function renderEquiposList(){ renderEquiposList; } // ya definida arriba
+function saveGeneral(){ /* placeholder: tu lógica de guardado */ }
 
+/* ---------- End script ---------- */
 </script>
 
 </body>
 </html>
-<!-- Fin del archivo corregido -->
