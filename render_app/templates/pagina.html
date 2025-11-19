@@ -1524,6 +1524,57 @@ onTanksOrEquiposChanged();
 renderActivitiesRed();
 renderActivitiesEquipo();
 
+function updateTankSelectOptions() {
+  const select = document.getElementById("select_tanque");
+  if (!select) return;
+  select.innerHTML = '<option value="">-- seleccionar tanque --</option>';
+
+  if (!window.tanks || !Array.isArray(tanks)) return;
+
+  tanks.forEach((t, i) => {
+    const opt = document.createElement("option");
+    opt.value = i + 1;
+    opt.textContent = `Tanque ${i + 1} — Serie: ${t["N° de serie"] || "-"}`;
+    select.appendChild(opt);
+  });
+}
+function doLogin() {
+  const email = document.getElementById("loginEmail").value.trim();
+  const company = document.getElementById("loginCompany").value.trim();
+  const err = document.getElementById("loginErr");
+
+  // Validaciones básicas
+  if (!email || !company) {
+    err.textContent = "Completa ambos campos.";
+    err.style.display = "block";
+    return;
+  }
+
+  // Aquí usa tus arreglos permitidos
+  if (typeof allowedEmails !== "undefined" && Array.isArray(allowedEmails)) {
+    if (!allowedEmails.includes(email)) {
+      err.textContent = "Correo no autorizado.";
+      err.style.display = "block";
+      return;
+    }
+  }
+
+  // Login OK → mostrar aplicación
+  err.style.display = "none";
+  document.getElementById("loginOverlay").style.display = "none";
+  document.getElementById("mainContainer").style.display = "block";
+
+  // Sidebar
+  document.getElementById("sidebarEmail").innerText = email;
+  document.getElementById("sidebarCompany").innerText = company;
+  document.getElementById("userInitials").innerText =
+    (company[0] || "").toUpperCase() + (company[1] || "").toUpperCase();
+}
+
+function loginCancel() {
+  window.location.reload();
+}
 </script>
 <!-- === FIN PARTE 3/3 === -->        
     
+
