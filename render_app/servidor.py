@@ -7,6 +7,20 @@ from docx import Document
 from docx.shared import Cm, Pt
 from PIL import Image
 import os, io, json, tempfile, traceback
+import os
+import tempfile
+import json
+from datetime import datetime
+from flask import Flask, request, send_file, jsonify, render_template
+from flask_cors import CORS
+import pandas as pd
+import unicodedata
+from docx import Document
+from docx.shared import Pt, RGBColor, Inches
+from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
+from docx.enum.table import WD_TABLE_ALIGNMENT, WD_ALIGN_VERTICAL
+from docx.oxml import OxmlElement
+from docx.oxml.ns import qn
 
 app = Flask(__name__, template_folder="templates")
 CORS(app)
@@ -414,4 +428,5 @@ def index():
 if __name__ == "__main__":
     # production: use gunicorn/uWSGI; this is dev
     app.run(host="0.0.0.0", port=5000, debug=True)
+
 
