@@ -4,183 +4,84 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Solgas · Inspección GLP</title>
-
-<!-- Font -->
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
-
 <style>
 :root{
-  --bg-1:#030419;
-  --bg-2:#042133;
-  --accent:#00d2ff;
-  --gold:#f6b73c;
-  --card:#071827;
-  --input-bg:#ffffff;
-  --muted:#9fdcff;
-  --label:#2b2b2b;
-  --input-text-dark:#041018;
-  --danger:#ff6b6b;
-  --radius:12px;
-  --glass: rgba(255,255,255,0.03);
-  --panel:#071827;
-  --light-card-bg:#f7fbff;
+  --bg-1:#030419; --bg-2:#042133; --accent:#00d2ff; --gold:#f6b73c;
+  --card:#071827; --input-bg:#ffffff; --muted:#9fdcff; --input-text-dark:#041018;
+  --danger:#ff6b6b; --radius:12px; --glass: rgba(255,255,255,0.03);
 }
 *{box-sizing:border-box;font-family:'Poppins',system-ui,-apple-system,Segoe UI,Roboto,Arial;color:#e6f7ff}
 html,body{height:100%;margin:0;background:linear-gradient(160deg,var(--bg-1),var(--bg-2));-webkit-font-smoothing:antialiased}
 .container{max-width:1200px;margin:24px auto;padding:18px;border-radius:14px}
 .header{display:flex;align-items:center;gap:12px;margin-bottom:18px}
-.logo{width:64px;height:64px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--gold));display:flex;align-items:center;justify-content:center;color:#041218;font-weight:800;box-shadow:0 10px 30px rgba(0,194,255,0.07)}
+.logo{width:64px;height:64px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--gold));display:flex;align-items:center;justify-content:center;color:#041218;font-weight:800}
 .title{font-size:20px;margin:0}
 .lead{color:var(--muted);font-size:13px;margin:0}
-
-/* PROGRESS BAR (fixed top) */
 #topProgressWrap{position:fixed;left:0;right:0;top:0;height:8px;background:rgba(255,255,255,0.06);z-index:120;border-bottom:1px solid rgba(255,255,255,0.02)}
 #topProgress{height:100%;width:0%;background:linear-gradient(90deg,var(--accent),var(--gold));transition:width .3s ease}
-
-/* layout */
 .app{display:grid;grid-template-columns:320px 1fr;gap:18px;padding-top:12px}
-/* sidebar */
 .sidebar{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); padding:12px; border-radius:12px; border:1px solid rgba(255,255,255,0.03)}
 .userbox{display:flex;gap:10px;align-items:center;margin-bottom:10px}
 .user-company{font-weight:700;color:#eafcff}
 .navlist{margin-top:8px}
 .nav-item{display:flex;justify-content:space-between;align-items:center;padding:8px;border-radius:8px;margin-bottom:8px;cursor:pointer;transition:all .12s}
-.nav-item.disabled{opacity:.45;cursor:not-allowed}
 .nav-item.active{background:linear-gradient(90deg, rgba(0,194,255,0.06), rgba(246,183,60,0.03)); border:1px solid rgba(0,194,255,0.08)}
 .status{font-size:13px;padding:4px 8px;border-radius:999px;background:rgba(255,255,255,0.02);color:var(--muted)}
-
-/* main */
 .main{background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.005)); padding:16px; border-radius:12px; border:1px solid rgba(255,255,255,0.02)}
 .step{display:none}
 .step.active{display:block; animation:fadeIn .26s ease both}
 @keyframes fadeIn{from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:none}}
-.card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
 .card-title{font-weight:700; color:var(--accent)}
 .hint{font-size:13px;color:var(--muted);opacity:.95}
-
-/* fields */
 .row{display:grid;gap:10px}
 .row.cols-2{grid-template-columns:1fr 1fr}
-.row.cols-3{grid-template-columns:1fr 1fr 1fr}
 .field{background:var(--input-bg); border-radius:10px; padding:8px; display:flex; align-items:center; gap:8px; border:1px solid rgba(0,0,0,0.06)}
 .field input, .field textarea, .field select{border:none;background:transparent;width:100%;outline:none;color:var(--input-text-dark);font-size:14px}
 .label{font-size:12px;color:var(--accent);margin-bottom:6px;font-weight:700}
 .small{font-size:12px;color:var(--muted)}
-
-/* buttons */
 .controls{display:flex;gap:10px;margin-top:12px;align-items:center}
 .btn{padding:10px 14px;border-radius:999px;border:none;font-weight:700;cursor:pointer}
-.btn.primary{background:linear-gradient(90deg,var(--accent), #6efcff); color:#041018; box-shadow:0 14px 40px rgba(0,194,255,0.08)}
+.btn.primary{background:linear-gradient(90deg,var(--accent), #6efcff); color:#041018}
 .btn.ghost{background:#ffffff;border:1px solid rgba(0,0,0,0.06); color:#041018}
-.btn.warn{background:linear-gradient(90deg,var(--gold), #ffd36b); color:#081017}
-.btn.danger{background:var(--danger); color:#041018}
 .btn.small{padding:6px 10px;border-radius:8px;font-weight:600}
-
-/* lists */
 .list{margin-top:8px}
 .tank-card{background:linear-gradient(180deg, rgba(0,0,0,0.25), rgba(0,0,0,0.18)); border-radius:10px; padding:10px; border:1px solid rgba(255,255,255,0.02); margin-bottom:10px; display:flex;justify-content:space-between;align-items:center}
-.tank-info{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;width:85%}
-.tank-actions{display:flex;gap:8px;align-items:center}
-
-/* modal (accessories edit) */
-.modal-back{position:fixed;inset:0;background:rgba(2,6,10,0);display:none;align-items:center;justify-content:center;z-index:60;padding:20px}
-.modal-back.active{display:flex ; color: #041018 }
-.modal{background:#ffffff;border-radius:12px;width:980px;max-width:98%;padding:16px;color:#041018;box-shadow:0 18px 50px rgba(2,6,20,0)}
-.modal h3{margin:0 0 8px 0 ; color : var(--accent) }
-.modal .field input{color:#041018}
-
-/* modal table */
-.acc-table{width:100%;border-collapse:collapse;margin-top:8px}
-.acc-table th,.acc-table td{border:1px solid #ddd;padding:6px;text-align:center}
-.acc-table th{background:#f3f3f3;color:#041018;font-weight:700}
-
-/* invalid */
-.invalid{border-color:#ff5b6b !important; box-shadow:0 6px 24px rgba(255,91,107,0.07)}
-.errlist{color:#ff9aa2; margin-top:8px; font-weight:700}
-
-/* accessory badges */
-.badge{padding:6px 8px;border-radius:999px;background:rgba(255,255,255,0.03);font-weight:700;color:var(--muted);font-size:12px}
-
-/* inline actions */
-.inline-actions{display:flex;gap:8px;align-items:center}
-
-/* select styling for good contrast */
-select.custom-select{background:#ffffff;color:#041018;padding:8px;border-radius:8px;border:1px solid #cfeef8;outline:none}
-select.custom-select option{color:#041018;background:#ffffff}
-
-/* contrast input text on dark mini cards */
-.card-dark{background:linear-gradient(180deg, rgba(0,0,0,0.25), rgba(0,0,0,0.18));padding:10px;border-radius:8px;color:#ffffff}
-
-/* accessory header dark */
-.acc-header{font-weight:800;color:#041018;background:#f3f3f3;padding:8px;border-radius:8px;display:inline-block;margin-bottom:8px}
-
-/* responsive */
-@media (max-width:980px){ .app{grid-template-columns:1fr} .tank-info{grid-template-columns:repeat(2,1fr);width:60%} }
-
-/* LOGIN overlay */
-#loginOverlay{position:fixed;inset:0;background:linear-gradient(160deg,var(--bg-1),var(--bg-2));display:flex;align-items:center;justify-content:center;z-index:200}
-#loginCard{width:520px;max-width:95%;background:#ffffff;border-radius:12px;padding:20px;color:#041018;box-shadow:0 20px 60px rgba(0,0,0,0.6)}
-.login-title{font-weight:800;font-size:20px;margin-bottom:6px ; color:#6b7280 }
-.login-sub{color:#6b7280;margin-bottom:12px}
-.login-field .field{background:#f3f7fb}
-.login-err{color:var(--danger);margin-top:10px;font-weight:700}
-
-/* ensure modal inputs and table texts are dark on white background */
-.modal input, .modal select, .modal textarea { color: #041018; background: #fff; border:1px solid #e6eef3; padding:6px; border-radius:6px }
-
-/* ensure acc-list table contrast */
-#acc-list table th, #acc-list table td {color:var(--accent) }
-#acc-list input { color:#041018; background:#fff; border:1px solid #e6eef3; padding:6px; border-radius:6px; width:100% }
-
-td.accesorio {
-	color : #041018 !important;
-}
-
-/* photo grid & table base (we'll build the dynamic table later) */
-.photo-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:12px; margin-top:12px }
-.photo-card { background:#ffffff; color:#041018; border-radius:10px; padding:8px; border:1px solid #e6eef3; display:flex; flex-direction:column; gap:8px; align-items:flex-start }
-.photo-preview { width:100%; height:140px; object-fit:cover; border-radius:6px; border:1px solid #cfeef8; background:#f6fbff }
-.small-muted { font-size:12px; color:#6b7280 }
-
-/* PHOTO TABLE STYLES (used in step 7) */
 .photo-table { width:100%; border-collapse:collapse; margin-top:8px; background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.005)); border-radius:8px; overflow:hidden; }
 .photo-table th, .photo-table td { padding:10px 12px; text-align:left; border-bottom:1px solid rgba(255,255,255,0.03); font-size:13px; color: #e6f7ff; }
 .photo-table thead th { background: linear-gradient(90deg,var(--accent),var(--gold)); color:#041018; font-weight:700; }
-.photo-table tbody tr.disabled { opacity:0.45; }
+.file-input-hidden { display:none; }
+.photo-preview-inline { width:150px; height:100px; object-fit:cover; border:1px solid #cfeef8; border-radius:6px; display:block }
 .badge-state { padding:6px 10px; border-radius:999px; font-weight:700; display:inline-block; min-width:64px; text-align:center; }
 .badge-red { background: var(--danger); color:#041018; }
 .badge-yellow { background: var(--gold); color:#041018; }
 .badge-green { background: linear-gradient(90deg,var(--accent), #6efcff); color:#041018; }
-.photo-action { display:flex; gap:8px; align-items:center; }
-.photo-count { font-weight:700; color:var(--muted); }
-.file-input-hidden { display:none; }
-.photo-row-title { font-weight:700; color:#ffffff; }
-.photo-row-sub { font-size:12px; color:var(--muted); }
-@media (max-width:980px){ .photo-table th, .photo-table td { font-size:12px; padding:8px } }
-
+.modal-back{position:fixed;inset:0;background:rgba(2,6,10,0.6);display:none;align-items:center;justify-content:center;z-index:60;padding:20px}
+.modal-back.active{display:flex}
+.modal{background:#ffffff;border-radius:12px;width:980px;max-width:98%;padding:16px;color:#041018;box-shadow:0 18px 50px rgba(2,6,20,0)}
+.acc-table{width:100%;border-collapse:collapse;margin-top:8px}
+.acc-table th,.acc-table td{border:1px solid #ddd;padding:6px;text-align:center}
+.errlist{color:#ff9aa2; margin-top:8px; font-weight:700}
+@media (max-width:980px){ .app{grid-template-columns:1fr} .photo-preview-inline{width:120px;height:80px} }
 </style>
 </head>
 <body>
-  <!-- Top progress bar -->
   <div id="topProgressWrap"><div id="topProgress"></div></div>
-
-  <!-- Login overlay -->
   <div id="loginOverlay" role="dialog" aria-modal="true">
     <div id="loginCard">
       <div style="display:flex;gap:12px;align-items:center">
         <div style="width:56px;height:56px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--gold));display:flex;align-items:center;justify-content:center;color:#041218;font-weight:800">SG</div>
         <div>
           <div class="login-title">Acceso - SOLGAS</div>
-          <div class="login-sub">Ingresa con tu correo corporativo.</div>
+          <div class="login-sub">Ingresa con tu correo corporativo y el nombre de empresa.</div>
         </div>
       </div>
-
       <div style="margin-top:12px">
         <div class="label">Correo corporativo</div>
         <div class="login-field field"><input id="loginEmail" type="email" placeholder="usuario@solgas.com.pe"></div>
-
+        <div class="label" style="margin-top:8px">Empresa</div>
+        <div class="login-field field"><input id="loginCompany" type="text" placeholder="Solgas"></div>
         <div class="login-err" id="loginErr" style="display:none"></div>
-
         <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
           <button class="btn ghost" onclick="loginCancel()">Salir</button>
           <button class="btn primary" id="loginBtn" onclick="doLogin()">Ingresar</button>
@@ -198,15 +99,14 @@ td.accesorio {
     </div>
     <div style="margin-left:auto; display:flex; gap:8px; align-items:center">
       <button class="btn ghost" id="downloadTemplateBtn">Plantilla</button>
-      <button class="btn primary" id="btnGenerate" onclick="showStep(7)">Generar Word</button>
+      <button class="btn primary" id="btnGenerate">Generar Word</button>
     </div>
   </div>
 
   <div id="app" class="app" style="display:block; margin-top:10px">
-    <!-- SIDEBAR -->
     <aside class="sidebar">
       <div class="userbox">
-        <div style="width:46px;height:46px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--gold));display:flex;align-items:center;justify-content:center;color:#041218;font-weight:700" id="userInitials">SG</div>
+        <div id="userInitials" style="width:46px;height:46px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--gold));display:flex;align-items:center;justify-content:center;color:#041218;font-weight:700">SG</div>
         <div>
           <div id="sidebarCompany" class="user-company">Empresa</div>
           <div id="sidebarEmail" class="small">correo@dominio.com</div>
@@ -215,34 +115,13 @@ td.accesorio {
 
       <div style="font-weight:700;color:var(--muted);margin-bottom:8px">Secciones</div>
       <div id="navlist" class="navlist">
-        <div class="nav-item active" data-step="1" onclick="navTo(1)">
-          <div>1 · Información general</div>
-          <div class="status" id="status-1">Obligatorio</div>
-        </div>
-        <div class="nav-item" data-step="2" onclick="navTo(2)">
-          <div>2 · Tanques</div>
-          <div class="status" id="status-2">0 tanques</div>
-        </div>
-        <div class="nav-item" data-step="3" onclick="navTo(3)">
-          <div>3 · Accesorios por tanque</div>
-          <div class="status" id="status-3">—</div>
-        </div>
-        <div class="nav-item" data-step="4" onclick="navTo(4)">
-          <div>4 · Accesorios en redes</div>
-          <div class="status" id="status-4">—</div>
-        </div>
-        <div class="nav-item" data-step="5" onclick="navTo(5)">
-          <div>5 · Equipos</div>
-          <div class="status" id="status-5">—</div>
-        </div>
-        <div class="nav-item" data-step="6" onclick="navTo(6)">
-          <div>6 · Observaciones & Final</div>
-          <div class="status" id="status-6">—</div>
-        </div>
-        <div class="nav-item" data-step="7" onclick="navTo(7)">
-          <div>7 · Carga de fotos</div>
-          <div class="status" id="status-7">—</div>
-        </div>
+        <div class="nav-item active" data-step="1" onclick="navTo(1)"><div>1 · Información general</div><div class="status" id="status-1">Obligatorio</div></div>
+        <div class="nav-item" data-step="2" onclick="navTo(2)"><div>2 · Tanques</div><div class="status" id="status-2">0 tanques</div></div>
+        <div class="nav-item" data-step="3" onclick="navTo(3)"><div>3 · Accesorios por tanque</div><div class="status" id="status-3">—</div></div>
+        <div class="nav-item" data-step="4" onclick="navTo(4)"><div>4 · Accesorios en redes</div><div class="status" id="status-4">—</div></div>
+        <div class="nav-item" data-step="5" onclick="navTo(5)"><div>5 · Equipos</div><div class="status" id="status-5">—</div></div>
+        <div class="nav-item" data-step="6" onclick="navTo(6)"><div>6 · Observaciones & Actividades</div><div class="status" id="status-6">—</div></div>
+        <div class="nav-item" data-step="7" onclick="navTo(7)"><div>7 · Carga de fotos</div><div class="status" id="status-7">—</div></div>
       </div>
 
       <div style="margin-top:12px;display:flex;gap:8px">
@@ -253,75 +132,27 @@ td.accesorio {
       <div style="margin-top:12px;font-size:13px;color:var(--muted)">Progreso: <span id="progressLabel">0 / 7</span></div>
     </aside>
 
-    <!-- MAIN -->
     <main class="main">
       <!-- STEP 1 -->
       <section id="step-1" class="step active">
         <div class="card-header">
-          <div>
-            <div class="card-title">1 · Información general por instalación</div>
-            <div class="hint">Completa los 11 campos obligatorios para continuar.</div>
-          </div>
+          <div><div class="card-title">1 · Información general por instalación</div><div class="hint">Completa los 11 campos obligatorios para continuar.</div></div>
           <div><span class="hint">Paso 1 / 7</span></div>
         </div>
-
         <div class="row cols-3">
-          <div>
-            <div class="label">Nombre o razón social del cliente *</div>
-            <div class="field"><input id="g_nombre" type="text" placeholder=""></div>
-          </div>
-          <div>
-            <div class="label">Fecha de inspección *</div>
-            <div class="field"><input id="g_fecha" type="date" placeholder=""></div>
-          </div>
-          <div>
-            <div class="label">Dirección *</div>
-            <div class="field"><input id="g_direccion" type="text"></div>
-          </div>
-
-          <div>
-            <div class="label">RUC o DNI *</div>
-            <div class="field"><input id="g_ruc" type="text" placeholder=""></div>
-          </div>
-
-          <div>
-            <div class="label">Número de instalación *</div>
-            <div class="field"><input id="g_numinst" type="text" placeholder=""></div>
-          </div>
-
-          <div>
-            <div class="label">Distrito *</div>
-            <div class="field"><input id="g_distrito" type="text" placeholder=""></div>
-          </div>
-
-          <div>
-            <div class="label">Departamento *</div>
-            <div class="field"><input id="g_departamento" type="text" placeholder=""></div>
-          </div>
-
-          <div>
-            <div class="label">Coordenadas *</div>
-            <div class="field"><input id="g_coordenadas" type="text" placeholder="lat, lon"></div>
-          </div>
-
-          <div>
-            <div class="label">Nombre del contacto *</div>
-            <div class="field"><input id="g_contacto" type="text" placeholder=""></div>
-          </div>
-
-          <div>
-            <div class="label">Número del contacto *</div>
-            <div class="field"><input id="g_telefono" type="text" placeholder=""></div>
-          </div>
-
-          <div style="grid-column:1/-1">
-            <div class="label">Correo de contacto *</div>
-            <div class="field"><input id="g_correo" type="email" placeholder=""></div>
-          </div>
+          <div><div class="label">Nombre o razón social del cliente *</div><div class="field"><input id="g_nombre" type="text"></div></div>
+          <div><div class="label">Fecha de inspección *</div><div class="field"><input id="g_fecha" type="date"></div></div>
+          <div><div class="label">Dirección *</div><div class="field"><input id="g_direccion" type="text"></div></div>
+          <div><div class="label">RUC o DNI *</div><div class="field"><input id="g_ruc" type="text"></div></div>
+          <div><div class="label">Número de instalación *</div><div class="field"><input id="g_numinst" type="text"></div></div>
+          <div><div class="label">Distrito *</div><div class="field"><input id="g_distrito" type="text"></div></div>
+          <div><div class="label">Departamento *</div><div class="field"><input id="g_departamento" type="text"></div></div>
+          <div><div class="label">Coordenadas *</div><div class="field"><input id="g_coordenadas" type="text" placeholder="lat, lon"></div></div>
+          <div><div class="label">Nombre del contacto *</div><div class="field"><input id="g_contacto" type="text"></div></div>
+          <div><div class="label">Número del contacto *</div><div class="field"><input id="g_telefono" type="text"></div></div>
+          <div style="grid-column:1/-1"><div class="label">Correo de contacto *</div><div class="field"><input id="g_correo" type="email"></div></div>
         </div>
-
         <div id="err-step-1" class="errlist"></div>
-
         <div class="controls" style="margin-top:16px">
           <button class="btn ghost" onclick="saveGeneral(true)">Guardar</button>
           <div style="flex:1"></div>
@@ -329,185 +160,69 @@ td.accesorio {
         </div>
       </section>
 
-      <!-- STEP 2: Tanques -->
+      <!-- STEP 2 -->
       <section id="step-2" class="step">
-        <div class="card-header">
-          <div>
-            <div class="card-title">2 · Tanques inspeccionados</div>
-            <div class="hint">Agrega los tanques en el formulario — el número se asigna automáticamente.</div>
-          </div>
-          <div><span class="hint">Paso 2 / 7</span></div>
-        </div>
-
-        <!-- Inline form para añadir/editar tanque -->
+        <div class="card-header"><div><div class="card-title">2 · Tanques inspeccionados</div><div class="hint">Agrega los tanques en el formulario — el número se asigna automáticamente.</div></div><div><span class="hint">Paso 2 / 7</span></div></div>
         <div style="background:var(--light-card-bg); padding:12px; border-radius:10px; margin-bottom:10px; border:1px solid rgba(0,0,0,0.04)">
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            <div style="min-width:160px;">
-              <div class="label">N° de serie *</div>
-              <div class="field"><input id="tank_serie" type="text" placeholder="Serie del tanque"></div>
-            </div>
-
-            <div style="min-width:120px;">
-              <div class="label">Capacidad (gal)</div>
-              <div class="field"><input id="tank_capacidad" type="text" placeholder="p. ej. 120"></div>
-            </div>
-
-            <div style="min-width:120px;">
-              <div class="label">Año de fabricación</div>
-              <div class="field"><input id="tank_anio" type="number" min="1900" max="2099" placeholder=""></div>
-            </div>
-
-            <div style="min-width:160px;">
-              <div class="label">Tipo (Aéreo / Soterrado / Móvil) *</div>
-              <div class="field">
-                <select id="tank_tipo" class="custom-select">
-                  <option value="">-- seleccionar --</option>
-                  <option value="Aéreo">Aéreo</option>
-                  <option value="Soterrado">Soterrado</option>
-                  <option value="Móvil">Móvil</option>
-                </select>
-              </div>
-            </div>
-
-            <div style="min-width:160px;">
-              <div class="label">Fabricante</div>
-              <div class="field"><input id="tank_fabricante" type="text" placeholder=""></div>
-            </div>
-
-            <div style="min-width:120px;">
-              <div class="label">% Actual</div>
-              <div class="field"><input id="tank_porcentaje" type="text" placeholder=""></div>
-            </div>
-
-            <div style="margin-left:auto; display:flex; gap:8px">
-              <button id="saveTankBtn" class="btn primary" onclick="saveTank()">Agregar / Guardar</button>
-              <button class="btn ghost" onclick="clearTankForm()">Limpiar</button>
-            </div>
+            <div style="min-width:160px;"><div class="label">N° de serie *</div><div class="field"><input id="tank_serie" type="text" placeholder="Serie del tanque"></div></div>
+            <div style="min-width:120px;"><div class="label">Capacidad (gal)</div><div class="field"><input id="tank_capacidad" type="text" placeholder="p. ej. 120"></div></div>
+            <div style="min-width:120px;"><div class="label">Año de fabricación</div><div class="field"><input id="tank_anio" type="number" min="1900" max="2099"></div></div>
+            <div style="min-width:160px;"><div class="label">Tipo (Aéreo / Soterrado / Móvil) *</div><div class="field"><select id="tank_tipo" class="custom-select"><option value="">-- seleccionar --</option><option value="Aéreo">Aéreo</option><option value="Soterrado">Soterrado</option><option value="Móvil">Móvil</option></select></div></div>
+            <div style="min-width:160px;"><div class="label">Fabricante</div><div class="field"><input id="tank_fabricante" type="text"></div></div>
+            <div style="min-width:120px;"><div class="label">% Actual</div><div class="field"><input id="tank_porcentaje" type="text"></div></div>
+            <div style="margin-left:auto; display:flex; gap:8px"><button id="saveTankBtn" class="btn primary" onclick="saveTank()">Agregar / Guardar</button><button class="btn ghost" onclick="clearTankForm()">Limpiar</button></div>
           </div>
           <div id="err-tank" class="errlist" style="margin-top:8px"></div>
         </div>
-
-        <div style="display:flex; gap:8px; align-items:center; margin-bottom:10px">
-          <button class="btn ghost" onclick="clearTanks()">Limpiar todos los tanques</button>
-          <div class="small" style="margin-left:auto">Después de guardar un tanque puedes editar sus accesorios.</div>
-        </div>
-
+        <div style="display:flex; gap:8px; align-items:center; margin-bottom:10px"><button class="btn ghost" onclick="clearTanks()">Limpiar todos los tanques</button><div class="small" style="margin-left:auto">Después de guardar un tanque puedes editar sus accesorios.</div></div>
         <div id="tanksList" class="list"></div>
-
         <div id="err-step-2" class="errlist"></div>
-
-        <div class="controls" style="margin-top:16px">
-          <button class="btn ghost" onclick="prevStep()">← Anterior</button>
-          <div style="flex:1"></div>
-          <button class="btn primary" onclick="nextStep()">Siguiente →</button>
-        </div>
+        <div class="controls" style="margin-top:16px"><button class="btn ghost" onclick="prevStep()">← Anterior</button><div style="flex:1"></div><button class="btn primary" onclick="nextStep()">Siguiente →</button></div>
       </section>
 
-      <!-- STEP 3: Accesorios por tanque -->
+      <!-- STEP 3 -->
       <section id="step-3" class="step">
-        <div class="card-header">
-          <div>
-            <div class="card-title">3 · Accesorios por tanque</div>
-            <div class="hint">Selecciona un tanque y llena sus accesorios. Las válvulas opcionales aparecen solo si activas su checkbox.</div>
-          </div>
-          <div><span class="hint">Paso 3 / 7</span></div>
-        </div>
-
+        <div class="card-header"><div><div class="card-title">3 · Accesorios por tanque</div><div class="hint">Selecciona un tanque y llena sus accesorios.</div></div><div><span class="hint">Paso 3 / 7</span></div></div>
         <div style="display:flex; gap:10px; align-items:center; margin-bottom:12px">
-          <div style="min-width:260px">
-            <div class="label">Seleccionar tanque *</div>
-            <div class="field">
-              <select id="select_tanque" class="custom-select">
-                <option value="">-- seleccionar tanque --</option>
-              </select>
-            </div>
-          </div>
-
-          <div style="margin-left:auto; display:flex;gap:8px">
-            <button class="btn small ghost" onclick="openAccModalFromStep3()">Editar accesorios</button>
-          </div>
+          <div style="min-width:260px"><div class="label">Seleccionar tanque *</div><div class="field"><select id="select_tanque" class="custom-select"><option value="">-- seleccionar tanque --</option></select></div></div>
+          <div style="margin-left:auto; display:flex;gap:8px"><button class="btn small ghost" onclick="openAccModalFromStep3()">Editar accesorios</button></div>
         </div>
-
         <div id="accTankArea">
           <div class="acc-header" id="acc-titulo">Accesorio del tanque —</div>
-          <div class="small" style="margin-bottom:10px">Rellena Marca / Código / Serie / Mes/Año de fabricación. Si no se completan aparecerá un guión en el informe.</div>
-
+          <div class="small" style="margin-bottom:10px">Rellena Marca / Código / Serie / Mes/Año.</div>
           <div id="acc-list"></div>
-
-          <div style="margin-top:10px">
-            <label style="font-weight:700;color:var(--muted)">Opcionales (activa para añadir)</label>
-            <div style="display:flex;gap:12px;margin-top:6px">
-              <label><input type="checkbox" id="opt_exceso_retorno"> Válvula exceso de flujo (Retorno)</label>
-              <label><input type="checkbox" id="opt_exceso_bypass"> Válvula exceso de flujo (Bypass)</label>
-              <label><input type="checkbox" id="opt_val3"> Val 3</label>
-            </div>
-          </div>
+          <div style="margin-top:10px"><label style="font-weight:700;color:var(--muted)">Opcionales (activa para añadir)</label><div style="display:flex;gap:12px;margin-top:6px">
+            <label><input type="checkbox" id="opt_exceso_retorno"> Válvula exceso de flujo (Retorno)</label>
+            <label><input type="checkbox" id="opt_exceso_bypass"> Válvula exceso de flujo (Bypass)</label>
+            <label><input type="checkbox" id="opt_val3"> Val 3</label>
+          </div></div>
         </div>
-
         <div id="err-step-3" class="errlist"></div>
-
-        <div class="controls" style="margin-top:16px">
-          <button class="btn ghost" onclick="prevStep()">← Anterior</button>
-          <div style="flex:1"></div>
-          <button class="btn primary" onclick="nextStep()">Siguiente →</button>
-        </div>
+        <div class="controls" style="margin-top:16px"><button class="btn ghost" onclick="prevStep()">← Anterior</button><div style="flex:1"></div><button class="btn primary" onclick="nextStep()">Siguiente →</button></div>
       </section>
 
-      <!-- STEP 4: Accesorios en redes (PARTE 2 / Parte original mantenida) -->
+      <!-- STEP 4 -->
       <section id="step-4" class="step">
-        <div class="card-header">
-          <div>
-            <div class="card-title">4 · Accesorios en redes</div>
-            <div class="hint">Agrega accesorios en redes. Selecciona el tipo (amigable) — se enviará el tipo interno esperado por el servidor.</div>
-          </div>
-          <div><span class="hint">Paso 4 / 7</span></div>
-        </div>
-
+        <div class="card-header"><div><div class="card-title">4 · Accesorios en redes</div><div class="hint">Agrega accesorios en redes.</div></div><div><span class="hint">Paso 4 / 7</span></div></div>
         <div style="background:var(--light-card-bg); padding:12px; border-radius:10px; margin-bottom:10px; border:1px solid rgba(0,0,0,0.04)">
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            <div style="min-width:260px;">
-              <div class="label">Tipo de accesorio *</div>
-              <div class="field">
-                <select id="red_tipo" class="custom-select">
-                  <option value="">-- seleccionar --</option>
-                  <option value="llenado_toma_desplazada">Válvula de llenado de toma desplazada</option>
-                  <option value="retorno_toma_desplazada">Válvula de retorno de toma desplazada</option>
-                  <option value="alivio_hidrostatico">Válvula de alivio hidrostático</option>
-                  <option value="regulador_primera_etapa">Regulador de primera etapa</option>
-                  <option value="alivio">Válvula de alivio</option>
-                  <option value="regulador_2da">Regulador de segunda etapa</option>
-                  <option value="pull_away">Válvula Pull Away</option>
-                  <option value="zona_medidores">Zona de medidores (Tiene / No)</option>
-                </select>
-              </div>
-            </div>
-
-            <div style="min-width:160px;">
-              <div class="label">Marca</div>
-              <div class="field"><input id="red_marca" type="text"></div>
-            </div>
-
-            <div style="min-width:160px;">
-              <div class="label">Serie</div>
-              <div class="field"><input id="red_serie" type="text"></div>
-            </div>
-
-            <div style="min-width:160px;">
-              <div class="label">Código</div>
-              <div class="field"><input id="red_codigo" type="text"></div>
-            </div>
-
-            <div style="min-width:200px;">
-              <div class="label">Mes/Año de fabricación</div>
-              <div class="field"><input id="red_mesano" type="text" placeholder="MM/YYYY"></div>
-            </div>
-
-            <div style="margin-left:auto; display:flex; gap:8px">
-              <button class="btn primary" onclick="addRed()">Agregar</button>
-              <button class="btn ghost" onclick="clearRedForm()">Limpiar</button>
-            </div>
+            <div style="min-width:260px;"><div class="label">Tipo de accesorio *</div><div class="field"><select id="red_tipo" class="custom-select"><option value="">-- seleccionar --</option>
+              <option value="llenado_toma_desplazada">Válvula de llenado de toma desplazada</option>
+              <option value="retorno_toma_desplazada">Válvula de retorno de toma desplazada</option>
+              <option value="alivio_hidrostatico">Válvula de alivio hidrostático</option>
+              <option value="regulador_primera_etapa">Regulador de primera etapa</option>
+              <option value="alivio">Válvula de alivio</option>
+              <option value="regulador_2da">Regulador de segunda etapa</option>
+              <option value="pull_away">Válvula Pull Away</option>
+              <option value="zona_medidores">Zona de medidores (Tiene / No)</option>
+            </select></div></div>
+            <div style="min-width:160px;"><div class="label">Marca</div><div class="field"><input id="red_marca" type="text"></div></div>
+            <div style="min-width:160px;"><div class="label">Serie</div><div class="field"><input id="red_serie" type="text"></div></div>
+            <div style="min-width:160px;"><div class="label">Código</div><div class="field"><input id="red_codigo" type="text"></div></div>
+            <div style="min-width:200px;"><div class="label">Mes/Año de fabricación</div><div class="field"><input id="red_mesano" type="text" placeholder="MM/YYYY"></div></div>
+            <div style="margin-left:auto; display:flex; gap:8px"><button class="btn primary" onclick="addRed()">Agregar</button><button class="btn ghost" onclick="clearRedForm()">Limpiar</button></div>
           </div>
-
           <div id="zonaMedidoresControls" style="display:none;margin-top:8px">
             <div class="label">Zona de medidores</div>
             <div style="display:flex;gap:12px;align-items:center">
@@ -516,844 +231,371 @@ td.accesorio {
             </div>
           </div>
         </div>
-
-        <div>
-          <div class="label" style="margin-bottom:6px">Lista de accesorios en redes</div>
-          <div id="redList"></div>
-        </div>
-
-        <div style="margin-top:12px">
-          <div class="card-header" style="margin-top:6px">
-            <div>
-              <div class="card-title">Actividades en redes (10.X)</div>
-              <div class="hint">Agrega actividades realizadas en las redes (llenado/retorno o consumo). Cada actividad tendrá fotos ANTES y DESPUÉS.</div>
-            </div>
-            <div><span class="hint">Dinámico</span></div>
-          </div>
-
-          <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
-            <div style="min-width:240px">
-              <div class="label">Seleccionar red</div>
-              <div class="field">
-                <select id="select_red_for_activity" class="custom-select">
-                  <option value="">-- seleccionar --</option>
-                  <option value="red_llenado_retorno">Red de llenado/retorno</option>
-                  <option value="red_consumo">Red de consumo</option>
-                </select>
-              </div>
-            </div>
-            <div style="flex:1">
-              <div class="label">Descripción actividad</div>
-              <div class="field"><input id="activity_red_desc" type="text" placeholder="Descripción (p.ej. Reparación sello)"></div>
-            </div>
-            <div style="display:flex;gap:8px">
-              <button class="btn primary" onclick="addActivityToRed()">Agregar Actividad</button>
-            </div>
-          </div>
-
-          <div id="activitiesRedList" class="list"></div>
-        </div>
-
-        <div class="controls" style="margin-top:16px">
-          <button class="btn ghost" onclick="prevStep()">← Anterior</button>
-          <div style="flex:1"></div>
-          <button class="btn primary" onclick="nextStep()">Siguiente →</button>
-        </div>
+        <div><div class="label" style="margin-bottom:6px">Lista de accesorios en redes</div><div id="redList"></div></div>
+        <div class="controls" style="margin-top:16px"><button class="btn ghost" onclick="prevStep()">← Anterior</button><div style="flex:1"></div><button class="btn primary" onclick="nextStep()">Siguiente →</button></div>
       </section>
 
-      <!-- STEP 5: Equipos de la instalación -->
+      <!-- STEP 5 -->
       <section id="step-5" class="step">
-        <div class="card-header">
-          <div>
-            <div class="card-title">5 · Equipos de la instalación</div>
-            <div class="hint">Agrega equipos — el nombre "Equipo" se genera automáticamente (Vaporizador1, Quemador1...).</div>
-          </div>
-          <div><span class="hint">Paso 5 / 7</span></div>
-        </div>
-
+        <div class="card-header"><div><div class="card-title">5 · Equipos de la instalación</div><div class="hint">Agrega equipos — el nombre se genera automáticamente.</div></div><div><span class="hint">Paso 5 / 7</span></div></div>
         <div style="background:var(--light-card-bg); padding:12px; border-radius:10px; margin-bottom:10px; border:1px solid rgba(0,0,0,0.04)">
           <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-            <div style="min-width:220px">
-              <div class="label">Tipo de equipo *</div>
-              <div class="field">
-                <select id="eq_tipo" class="custom-select">
-                  <option value="">-- seleccionar --</option>
-                  <option value="vaporizador">Vaporizador</option>
-                  <option value="quemador">Quemador</option>
-                  <option value="decantador">Decantador</option>
-                  <option value="dispensador_de_gas">Dispensador de gas</option>
-                  <option value="bomba">Bomba</option>
-                  <option value="tablero">Tablero</option>
-                  <option value="estabilizador">Estabilizador</option>
-                  <option value="detector">Detector</option>
-                  <option value="extintor">Extintor</option>
-                </select>
-              </div>
-            </div>
-
-            <div style="min-width:220px">
-              <div class="label">Equipo (generado) </div>
-              <div class="field"><input id="eq_name" type="text" disabled></div>
-            </div>
-
+            <div style="min-width:220px"><div class="label">Tipo de equipo *</div><div class="field"><select id="eq_tipo" class="custom-select"><option value="">-- seleccionar --</option><option value="vaporizador">Vaporizador</option><option value="quemador">Quemador</option><option value="decantador">Decantador</option><option value="dispensador_de_gas">Dispensador de gas</option><option value="bomba">Bomba</option><option value="tablero">Tablero</option><option value="estabilizador">Estabilizador</option><option value="detector">Detector</option><option value="extintor">Extintor</option></select></div></div>
+            <div style="min-width:220px"><div class="label">Equipo (generado)</div><div class="field"><input id="eq_name" type="text" disabled></div></div>
             <div id="dynamicFields" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"></div>
-
-            <div style="margin-left:auto;display:flex;gap:8px">
-              <button class="btn primary" onclick="addEquipo()">Agregar Equipo</button>
-              <button class="btn ghost" onclick="clearEquipoForm()">Limpiar</button>
-            </div>
+            <div style="margin-left:auto;display:flex;gap:8px"><button class="btn primary" onclick="addEquipo()">Agregar Equipo</button><button class="btn ghost" onclick="clearEquipoForm()">Limpiar</button></div>
           </div>
         </div>
-
-        <div>
-          <div class="label">Lista de equipos</div>
-          <div id="equiposList"></div>
-        </div>
-
-        <div style="margin-top:12px">
-          <div class="card-header" style="margin-top:6px">
-            <div>
-              <div class="card-title">Actividades por equipo (opcional)</div>
-              <div class="hint">Si realizas trabajos sobre un equipo específico, añade la actividad aquí.</div>
-            </div>
-            <div><span class="hint">Dinámico</span></div>
-          </div>
-
-          <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
-            <div style="min-width:240px">
-              <div class="label">Seleccionar equipo</div>
-              <div class="field">
-                <select id="select_eq_for_activity" class="custom-select">
-                  <option value="">-- seleccionar equipo --</option>
-                </select>
-              </div>
-            </div>
-            <div style="flex:1">
-              <div class="label">Descripción actividad</div>
-              <div class="field"><input id="activity_eq_desc" type="text" placeholder="Descripción actividad"></div>
-            </div>
-            <div style="display:flex;gap:8px">
-              <button class="btn primary" onclick="addActivityToEquipo()">Agregar Actividad</button>
-            </div>
-          </div>
-
-          <div id="activitiesEquipoList" class="list"></div>
-        </div>
-
-        <div class="controls" style="margin-top:16px">
-          <button class="btn ghost" onclick="prevStep()">← Anterior</button>
-          <div style="flex:1"></div>
-          <button class="btn primary" onclick="nextStep()">Siguiente →</button>
-        </div>
+        <div><div class="label">Lista de equipos</div><div id="equiposList"></div></div>
+        <div class="controls" style="margin-top:16px"><button class="btn ghost" onclick="prevStep()">← Anterior</button><div style="flex:1"></div><button class="btn primary" onclick="nextStep()">Siguiente →</button></div>
       </section>
 
-<!-- Modal para actividades (edición detallada) -->
-<div id="modalActivity" class="modal-back" aria-hidden="true">
-  <div class="modal" role="dialog" aria-modal="true">
-    <h3 id="modalActivityTitle">Editar actividad</h3>
-    <div id="modalActivityContent">
-      <div class="label">Descripción</div>
-      <div class="field"><input id="modal_activity_desc" type="text"></div>
-      <div style="margin-top:10px">
-        <div class="label">Fotos ANTES</div>
-        <input id="modal_activity_files_before" type="file" accept="image/*" multiple>
-        <div style="margin-top:8px" id="modal_before_preview"></div>
-      </div>
-      <div style="margin-top:10px">
-        <div class="label">Fotos DESPUÉS</div>
-        <input id="modal_activity_files_after" type="file" accept="image/*" multiple>
-        <div style="margin-top:8px" id="modal_after_preview"></div>
-      </div>
-    </div>
-    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px">
-      <button class="btn ghost" onclick="closeActivityModal()">Cancelar</button>
-      <button class="btn primary" onclick="saveActivityModal()">Guardar</button>
-    </div>
+      <!-- STEP 6: Observaciones & Actividades -->
+      <section id="step-6" class="step">
+        <div class="card-header"><div><div class="card-title">6 · Observaciones & Actividades</div><div class="hint">Revisa todo y gestiona actividades del punto 10 (antes/después).</div></div><div><span class="hint">Paso 6 / 7</span></div></div>
+        <div>
+          <div class="label">7.1 Observaciones al cliente</div><div class="field"><textarea id="obs_71" rows="2" style="width:100%;resize:vertical;color:var(--input-text-dark)"></textarea></div>
+          <div class="label" style="margin-top:8px">7.2 Observaciones en red de llenado y retorno</div><div class="field"><textarea id="obs_72" rows="2" style="width:100%;resize:vertical;color:var(--input-text-dark)"></textarea></div>
+          <div class="label" style="margin-top:8px">7.3 Observaciones en zona de tanque</div><div class="field"><textarea id="obs_73" rows="2" style="width:100%;resize:vertical;color:var(--input-text-dark)"></textarea></div>
+          <div class="label" style="margin-top:8px">7.4 Observaciones en red de consumo</div><div class="field"><textarea id="obs_74" rows="2" style="width:100%;resize:vertical;color:var(--input-text-dark)"></textarea></div>
+          <div class="label" style="margin-top:8px">7.5 Observaciones en equipos varios (separar por punto)</div><div class="field"><textarea id="obs_75" rows="3" style="width:100%;resize:vertical;color:var(--input-text-dark)"></textarea></div>
+        </div>
+
+        <div style="margin-top:12px; display:flex; gap:8px; align-items:center">
+          <button class="btn primary" onclick="openActivitiesModal()">Gestionar Actividades (Punto 10)</button>
+          <div class="small" style="margin-left:12px">Agrega actividades por tanque o por redes; cada actividad tendrá fotos ANTES/DESPUÉS en el paso 7.</div>
+        </div>
+
+        <div id="err-step-6" class="errlist"></div>
+        <div class="controls" style="margin-top:16px"><button class="btn ghost" onclick="prevStep()">← Anterior</button><div style="flex:1"></div><button class="btn primary" onclick="nextStep()">Siguiente →</button></div>
+      </section>
+
+      <!-- STEP 7: Fotos (tabla dinámica, integra previews y antes/después) -->
+      <section id="step-7" class="step">
+        <div class="card-header"><div><div class="card-title">7 · Carga de fotos</div><div class="hint">Sube las fotos solicitadas desde la tabla. Los subtítulos y claves son generados por el servidor.</div></div><div><span class="hint">Paso 7 / 7</span></div></div>
+        <div>
+          <div class="label" style="margin-top:10px">Lista de fotografías requeridas</div>
+          <div id="photoContainer" style="margin-top:8px"></div>
+          <div style="margin-top:12px" class="small-muted">Si no subes una foto para una clave, el informe dejará el recuadro vacío / con nota. Para recuadros “antes/después” sube ambos archivos con las claves indicadas.</div>
+        </div>
+        <div style="margin-top:14px" id="err-step-7" class="errlist"></div>
+        <div class="controls" style="margin-top:16px"><button class="btn ghost" onclick="prevStep()">← Anterior</button><div style="flex:1"></div><button class="btn primary" id="finalGenerate">Generar Word →</button></div>
+      </section>
+    </main>
   </div>
 </div>
 
-<!-- STEP 7 (foto table, parte 3) -->
-<section id="step-7" class="step">
-  <div class="card-header">
-    <div>
-      <div class="card-title">7 · Carga de fotos</div>
-      <div class="hint">Sube las fotos solicitadas desde la tabla. Solo se habilitarán los campos que apliquen al informe. Para actividades (10.X) hay separación clara ANTES / DESPUÉS.</div>
-    </div>
-    <div><span class="hint">Paso 7 / 7</span></div>
+<!-- Modales -->
+<div id="modalAcc" class="modal-back"><div class="modal" role="dialog" aria-modal="true"><h3 id="modalTitle">Editar accesorios</h3><div id="modalContent"><table class="acc-table" id="modalAccTable"><thead><tr><th>Accesorio</th><th>Marca</th><th>Código</th><th>Serie</th><th>Mes/Año</th></tr></thead><tbody></tbody></table></div><div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px"><button class="btn ghost" onclick="closeAccModal()">Cancelar</button><button class="btn primary" onclick="saveAccModal()">Guardar</button></div></div></div>
+
+<div id="modalActivities" class="modal-back"><div class="modal" role="dialog" aria-modal="true"><h3 id="activitiesTitle">Gestionar Actividades - Punto 10</h3>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+    <div style="min-width:260px"><div class="label">Destino</div><div class="field"><select id="act_dest" class="custom-select"><option value="">-- seleccionar --</option></select></div></div>
+    <div style="min-width:360px"><div class="label">Descripción de la actividad</div><div class="field"><input id="act_desc" type="text" placeholder="Ej: Cambio de válvula, revisión, soldadura..."></div></div>
+    <div style="display:flex;align-items:flex-end;"><button class="btn primary" onclick="addActivity()">Agregar actividad</button></div>
   </div>
+  <div><div class="label">Actividades actuales</div><div id="activitiesList" style="max-height:300px;overflow:auto"></div></div>
+  <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px"><button class="btn ghost" onclick="closeActivitiesModal()">Cerrar</button></div>
+</div></div>
 
-  <div id="photoContainer" style="margin-top:6px"></div>
-
-  <div style="margin-top:12px" class="small-muted">Sugerencia: sube cada imagen con calidad adecuada. Las imágenes se redimensionarán a 15x10 cm (se envían como JPG). Para recuadros “ANTES/DESPUÉS” sube ambas imágenes con las claves indicadas.</div>
-
-  <div style="margin-top:14px" id="err-step-7" class="errlist"></div>
-
-  <div class="controls" style="margin-top:16px">
-    <button class="btn ghost" onclick="prevStep()">← Anterior</button>
-    <div style="flex:1"></div>
-    <button class="btn primary" id="finalGenerate">Generar Word →</button>
-  </div>
-</section>
-
-</main>
-  </div>
-</div>
-
-<!-- ==========================
-     SCRIPT DE COMPATIBILIDAD
-     (patch con funciones y variables faltantes)
-     ========================== -->
 <script>
-/*
-  Script agregado para inicializar variables antes de su uso y añadir funciones faltantes.
-  Login validado mediante allowedEmails (sin password) según tu pedido.
-*/
-
-/* ---------- Inicializaciones globales (deben existir antes de cualquier uso) ---------- */
-let actividades = {};         // mapa: 'tank1' -> [ {descripcion, antesFiles, despuesFiles}, ... ]
-let allowedEmails = [
-    "moises@empresa.com",
-    "inspector@empresa.com",
-    "soporte@empresa.com",
-    "admin@empresa.com"
+/* -------------------------
+   Allowed emails (client-side)
+   ------------------------- */
+const allowedEmails = [
+  "alexander.buleje@solgas.com.pe","renzo.delgado@solgas.com.pe","ingenieriaeye@hotmail.com",
+  "jarmas@inginor.com.pe","Jaime.valdeiglesias16@totalgassac.com","area.mantenimiento@gsgasperu.com",
+  "mantenimiento@cmagol.com.pe","aherrera@gypingenieros.com","iserrepe@openersac.com",
+  "operacionesglp@northcompany.com.pe","ingenieria1@semmaq.com","administracion@citecservices.com"
 ];
-let equipos = [];
-let tanks = [];
-let redes = [];
-let bloquesFotosCache = [];   // se poblará con fetchBloquesFotos o con mock
-let uploadedPhotos = {};      // mapa clave -> [File,...]
-let currentStep = 1;
-const TOTAL_STEPS = 7;
 
-/* ---------- Login (solo correo permitido, sin password) ---------- */
-function doLogin(){
-  const email = (document.getElementById('loginEmail').value || '').trim();
-  const err = document.getElementById('loginErr');
+/* Application state */
+let currentStep = 1; const TOTAL_STEPS = 7;
+let generalInfo = {}; let tanks = []; let accessoriesByTank = {}; let redes = []; let zona_medidores_val = null;
+let equipos = []; let actividades = {}; // dynamic activities structure: { "tank1":[{descripcion}], "red_llenado_retorno":[{descripcion}], ... }
+let uploadedPhotos = {}; // clave -> [File,...]
+let bloquesFotosCache = [];
 
-  if(!email){
-    err.innerText = 'Ingresa un correo.';
-    err.style.display = 'block';
-    return;
-  }
+const estructuraEquipos = {
+  "vaporizador": ["Equipo", "Marca", "Tipo", "Serie", "Año de fabricación", "Capacidad"],
+  "quemador": ["Equipo", "Marca", "Modelo", "Tipo", "Serie", "Año de fabricación", "Capacidad (kW)"],
+  "decantador": ["Equipo", "Fabricante", "Modelo", "Tipo", "Serie", "Año de fabricación", "Capacidad (gal)"],
+  "dispensador_de_gas": ["Equipo", "Marca", "Modelo", "Serie"],
+  "bomba": ["Equipo", "Marca", "Modelo", "Serie"],
+  "tablero": ["Equipo", "TAG"],
+  "estabilizador": ["Equipo", "Marca", "Modelo", "Serie"],
+  "detector": ["Equipo", "Marca", "Modelo", "Serie"],
+  "extintor": ["Equipo", "Marca", "Serie", "Año de fabricación", "Próxima PH", "Fecha de próxima recarga"]
+};
+const accesoriosFijos = ["Válvula de llenado", "Medidor de porcentaje", "Válvula de seguridad", "Válvula de drenaje", "Multiválvula"];
+const accesoriosOpcionales = ["Válvula exceso de flujo (Retorno)","Válvula exceso de flujo (Bypass)","Val 3"];
 
-  if(!allowedEmails.includes(email)){
-    err.innerText = 'Correo no autorizado.';
-    err.style.display = 'block';
-    return;
-  }
-
-  err.style.display = 'none';
-  document.getElementById('loginOverlay').style.display = 'none';
-  document.getElementById('mainContainer').style.display = 'block';
-  document.getElementById('sidebarEmail').innerText = email;
-  document.getElementById('userInitials').innerText =
-    (email.split('@')[0].slice(0,2) || 'SG').toUpperCase();
-}
-
-function loginCancel(){
-  // Oculta overlay o recarga
-  document.getElementById('loginOverlay').style.display = 'none';
-}
-
-/* ---------- Navegación multi-step (básica y segura) ---------- */
-function showStep(n){
-  if(typeof n !== 'number') n = parseInt(n) || 1;
-  if(n < 1) n = 1;
-  if(n > TOTAL_STEPS) n = TOTAL_STEPS;
-  for(let i=1;i<=TOTAL_STEPS;i++){
-    const el = document.getElementById(`step-${i}`);
-    if(el) el.classList.remove('active');
-    const nav = document.querySelector(`.nav-item[data-step="${i}"]`);
-    if(nav) nav.classList.remove('active');
-  }
-  const target = document.getElementById(`step-${n}`);
-  if(target) target.classList.add('active');
-  const navTarget = document.querySelector(`.nav-item[data-step="${n}"]`);
-  if(navTarget) navTarget.classList.add('active');
-  currentStep = n;
-  updateTopProgress();
-
-  if(n === 7){
-    // reconstruir tabla de fotos
-    if(typeof fetchBloquesFotos === 'function'){
-      fetchBloquesFotos().then(()=>{ if(typeof buildPhotoTable === 'function') buildPhotoTable(); });
-    } else {
-      if(typeof buildPhotoTable === 'function') buildPhotoTable();
-    }
-  }
-}
-
-function nextStep(){
-  if(currentStep < TOTAL_STEPS) showStep(currentStep + 1);
-}
-function prevStep(){ if(currentStep > 1) showStep(currentStep - 1); }
-function navTo(n){ showStep(n); }
-function updateTopProgress(){
-  const bar = document.getElementById('topProgress');
-  const pct = ((currentStep - 1) / (TOTAL_STEPS - 1)) * 100;
-  if(bar) bar.style.width = `${pct}%`;
-  const lbl = document.getElementById('progressLabel');
-  if(lbl) lbl.innerText = `${currentStep} / ${TOTAL_STEPS}`;
-}
-
-/* ---------- Tanques (mínimo funcional) ---------- */
-function clearTankForm(){
-  ['tank_serie','tank_capacidad','tank_anio','tank_tipo','tank_fabricante','tank_porcentaje'].forEach(id=>{
-    const el = document.getElementById(id);
-    if(el) el.value = '';
-  });
-  const err = document.getElementById('err-tank'); if(err) err.innerText = '';
-}
-
-function saveTank(){
-  const serie = (document.getElementById('tank_serie').value || '').trim();
-  const capacidad = (document.getElementById('tank_capacidad').value || '').trim();
-  const anio = (document.getElementById('tank_anio').value || '').trim();
-  const tipo = (document.getElementById('tank_tipo').value || '').trim();
-  const fabricante = (document.getElementById('tank_fabricante').value || '').trim();
-  const porcentaje = (document.getElementById('tank_porcentaje').value || '').trim();
-
-  if(!serie || !tipo){
-    const err = document.getElementById('err-tank'); if(err) err.innerText = 'N° de serie y Tipo son obligatorios.';
-    return;
-  }
-
-  const t = {"N° de serie": serie, "Capacidad": capacidad, "Año": anio, "Tipo": tipo, "Fabricante": fabricante, "Porcentaje": porcentaje};
-  tanks.push(t);
-  renderTanksList();
-  clearTankForm();
-  onTanksOrEquiposChanged();
-}
-
-function renderTanksList(){
-  const el = document.getElementById('tanksList');
-  if(!el) return;
-  el.innerHTML = '';
-  if(tanks.length === 0){
-    el.innerHTML = '<div class="small">No hay tanques añadidos.</div>';
-    document.getElementById('status-2').innerText = '0 tanques';
-    updateTankSelectOptions();
-    return;
-  }
-  tanks.forEach((t,i)=>{
-    const div = document.createElement('div'); div.className = 'tank-card';
-    div.innerHTML = `<div class="tank-info">
-      <div><strong>Tanque ${i+1}</strong></div>
-      <div>Serie: ${t["N° de serie"] || '-'}</div>
-      <div>Tipo: ${t["Tipo"] || '-'}</div>
-      <div>Capacidad: ${t["Capacidad"] || '-'}</div>
-      <div>Año: ${t["Año"] || '-'}</div>
-    </div>
-    <div class="tank-actions">
-      <div style="display:flex;gap:8px">
-        <button class="btn small ghost" onclick="editTank(${i})">Editar</button>
-        <button class="btn small danger" onclick="deleteTank(${i})">Borrar</button>
-        <button class="btn small primary" onclick="addActivityToTank(${i+1})">+ Actividad</button>
-      </div>
-    </div>`;
-    el.appendChild(div);
-  });
+/* Progress UI */
+function updateProgressUI(){
+  document.getElementById('progressLabel').innerText = `${currentStep} / ${TOTAL_STEPS}`;
+  const percent = Math.round(((currentStep-1)/(TOTAL_STEPS-1))*100);
+  document.getElementById('topProgress').style.width = percent + '%';
   document.getElementById('status-2').innerText = `${tanks.length} tanques`;
-  updateTankSelectOptions();
+  document.getElementById('status-7').innerText = 'Carga de fotos';
 }
 
-function editTank(i){
-  const t = tanks[i]; if(!t) return;
-  document.getElementById('tank_serie').value = t["N° de serie"] || '';
-  document.getElementById('tank_capacidad').value = t["Capacidad"] || '';
-  document.getElementById('tank_anio').value = t["Año"] || '';
-  document.getElementById('tank_tipo').value = t["Tipo"] || '';
-  document.getElementById('tank_fabricante').value = t["Fabricante"] || '';
-  document.getElementById('tank_porcentaje').value = t["Porcentaje"] || '';
-  tanks.splice(i,1);
-  renderTanksList();
-}
-
-function deleteTank(i){
-  if(!confirm('Eliminar tanque?')) return;
-  tanks.splice(i,1);
-  renderTanksList();
-  onTanksOrEquiposChanged();
-}
-
-function clearTanks(){
-  if(!confirm('Limpiar todos los tanques?')) return;
-  tanks = [];
-  renderTanksList();
-  onTanksOrEquiposChanged();
-}
-
-/* ---------- Equipos (mínimo funcional) ---------- */
-function clearEquipoForm(){
-  const eqTipo = document.getElementById('eq_tipo'); if(eqTipo) eqTipo.value = '';
-  const eqName = document.getElementById('eq_name'); if(eqName) eqName.value = '';
-  const df = document.getElementById('dynamicFields'); if(df) df.innerHTML = '';
-}
-
-document.addEventListener('DOMContentLoaded', function(){
-  const eqTipo = document.getElementById('eq_tipo');
-  if(eqTipo){
-    eqTipo.addEventListener('change', function(){
-      const t = this.value || '';
-      const nameInput = document.getElementById('eq_name');
-      if(!nameInput) return;
-      if(!t) { nameInput.value = ''; return; }
-      const count = equipos.filter(e=>e.Tipo === t).length + 1;
-      nameInput.value = `${t}_${count}`;
-    });
+/* Navigation */
+function showStep(n){
+  currentStep = n;
+  for(let i=1;i<=TOTAL_STEPS;i++){ const stepEl = document.getElementById(`step-${i}`); if(stepEl) stepEl.classList.remove('active'); const nav = document.querySelector(`.nav-item[data-step="${i}"]`); if(nav) nav.classList.remove('active'); }
+  const target = document.getElementById(`step-${n}`);
+  if(target){
+    target.classList.add('active');
+    if(n===7) fetchBloquesFotos();
   }
-});
-
-function addEquipo(){
-  const tipo = (document.getElementById('eq_tipo').value || '').trim();
-  const name = (document.getElementById('eq_name').value || '').trim();
-  if(!tipo || !name){ alert('Selecciona tipo y asegúrate que se genere el nombre.'); return; }
-  equipos.push({Tipo: tipo, Equipo: name});
-  renderEquiposList();
-  updateEquipoSelects();
-  onTanksOrEquiposChanged();
-  clearEquipoForm();
+  const navActive = document.querySelector(`.nav-item[data-step="${n}"]`); if(navActive) navActive.classList.add('active');
+  updateProgressUI();
+}
+function nextStep(){ if(!validateStep(currentStep)) return; if(currentStep < TOTAL_STEPS) showStep(currentStep+1); }
+function prevStep(){ if(currentStep>1) showStep(currentStep-1); }
+function navTo(n){
+  if(n>currentStep){ if(!validateStep(currentStep)) return; for(let i=1;i<n;i++){ if(!validateStep(i)){ alert('Complete pasos previos antes de avanzar.'); return; } } }
+  showStep(n);
 }
 
-function renderEquiposList(){
-  const c = document.getElementById('equiposList');
-  if(!c) return;
-  c.innerHTML = '';
-  if(equipos.length === 0){ c.innerHTML = '<div class="small">No hay equipos agregados.</div>'; return; }
-  equipos.forEach((eq,i)=>{
-    const div = document.createElement('div');
-    div.className = 'tank-card';
-    div.innerHTML = `<div style="font-weight:700;color:#fff">${i+1}. ${eq.Equipo}</div>
-                     <div style="display:flex;gap:8px">
-                      <button class="btn small ghost" onclick="editEquipo(${i})">Editar</button>
-                      <button class="btn small danger" onclick="deleteEquipo(${i})">Borrar</button>
-                     </div>`;
-    c.appendChild(div);
-  });
+/* Login */
+function doLogin(){
+  const email = (document.getElementById('loginEmail').value||'').trim().toLowerCase();
+  const company = (document.getElementById('loginCompany').value||'').trim();
+  const err = document.getElementById('loginErr');
+  if(!email || !company){ err.style.display='block'; err.innerText='Correo y Empresa son obligatorios.'; return; }
+  if(!allowedEmails.includes(email)){ err.style.display='block'; err.innerText='Correo no autorizado.'; return; }
+  document.getElementById('loginOverlay').remove();
+  document.getElementById('sidebarCompany').innerText = company;
+  document.getElementById('sidebarEmail').innerText = email;
+  document.getElementById('userInitials').innerText = company.split(' ').map(s=>s[0]).slice(0,2).join('').toUpperCase();
+  updateProgressUI();
 }
+function loginCancel(){ alert('Salida de la aplicación.'); document.getElementById('loginOverlay').style.display='none'; document.body.innerHTML = '<div style="padding:40px;font-family:Arial;">Acceso cancelado.</div>'; }
 
-function editEquipo(i){
-  const eq = equipos[i]; if(!eq) return;
-  document.getElementById('eq_tipo').value = eq.Tipo || '';
-  document.getElementById('eq_name').value = eq.Equipo || '';
-  equipos.splice(i,1);
-  renderEquiposList();
-  updateEquipoSelects();
-}
-
-function deleteEquipo(i){
-  if(!confirm('Eliminar equipo?')) return;
-  equipos.splice(i,1);
-  renderEquiposList();
-  updateEquipoSelects();
-  onTanksOrEquiposChanged();
-}
-
-/* ---------- Selects update ---------- */
-function updateEquipoSelects(){
-  const sel = document.getElementById('select_eq_for_activity');
-  if(!sel) return;
-  sel.innerHTML = '<option value="">-- seleccionar equipo --</option>';
-  equipos.forEach((eq,i)=>{
-    const key = `equipo_${i+1}`;
-    const opt = document.createElement('option'); opt.value = key; opt.textContent = `${key} — ${eq["Equipo"]||'-'}`;
-    sel.appendChild(opt);
-  });
-}
-
-function updateTankSelectOptions(){
-  const select = document.getElementById('select_tanque');
-  if(!select) return;
-  select.innerHTML = '<option value="">-- seleccionar tanque --</option>';
-  tanks.forEach((t,i)=>{
-    const idx = i+1;
-    const opt = document.createElement('option');
-    opt.value = `tank${idx}`;
-    opt.textContent = `Tanque ${idx} — Serie: ${t["N° de serie"] || '-'}`;
-    select.appendChild(opt);
-  });
-}
-
-function onTanksOrEquiposChanged(){
-  try{ updateTankSelectOptions(); }catch(e){}
-  try{ updateEquipoSelects(); }catch(e){}
-  tanks.forEach((t,i)=> renderActivitiesForTankList(i+1) );
-}
-
-/* ---------- Redes y actividades (sketch mínimo para que no rompa) ---------- */
-function addRed(){
-  const tipo = document.getElementById('red_tipo').value;
-  const marca = document.getElementById('red_marca').value;
-  const serie = document.getElementById('red_serie').value;
-  const codigo = document.getElementById('red_codigo').value;
-  const mesano = document.getElementById('red_mesano').value;
-  if(!tipo){
-    alert('Selecciona tipo de accesorio');
-    return;
-  }
-  redes.push({tipo,marca,serie,codigo,mesano});
-  renderRedList();
-  clearRedForm();
-}
-
-function clearRedForm(){
-  ['red_tipo','red_marca','red_serie','red_codigo','red_mesano'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
-}
-
-function renderRedList(){
-  const el = document.getElementById('redList'); if(!el) return;
-  el.innerHTML = '';
-  if(redes.length === 0){ el.innerHTML = '<div class="small">No hay accesorios en redes.</div>'; return; }
-  redes.forEach((r,i)=>{
-    const div = document.createElement('div'); div.className='tank-card';
-    div.innerHTML = `<div style="font-weight:700">${i+1}. ${humanReadableTipo(r.tipo)}</div>
-      <div style="display:flex;gap:8px">
-        <button class="btn small ghost" onclick="editRed(${i})">Editar</button>
-        <button class="btn small danger" onclick="deleteRed(${i})">Borrar</button>
-      </div>`;
-    el.appendChild(div);
-  });
-}
-
-function humanReadableTipo(tipo){
-  const map = {
-    'llenado_toma_desplazada':'Válvula de llenado (toma desplazada)',
-    'retorno_toma_desplazada':'Válvula de retorno (toma desplazada)',
-    'alivio_hidrostatico':'Alivio hidrostático',
-    'regulador_primera_etapa':'Regulador 1ª etapa',
-    'alivio':'Válvula de alivio',
-    'regulador_2da':'Regulador 2ª etapa',
-    'pull_away':'Pull Away',
-    'zona_medidores':'Zona de medidores',
-    'red_llenado_retorno':'Red (llenado/retorno)',
-    'red_consumo':'Red (consumo)'
+/* STEP 1 */
+function saveGeneral(showMsg=false){
+  const required = ["g_nombre","g_fecha","g_direccion","g_ruc","g_numinst","g_distrito","g_departamento","g_coordenadas","g_contacto","g_telefono","g_correo"];
+  const missing = required.filter(id=>{ const el = document.getElementById(id); return !el || !String(el.value||'').trim(); });
+  if(missing.length){ document.getElementById('err-step-1').innerText = 'Faltan campos obligatorios en Información general.'; return false; }
+  document.getElementById('err-step-1').innerText = '';
+  generalInfo = {
+    "Nombre o razón social del cliente": document.getElementById('g_nombre').value.trim(),
+    "Fecha de inspección": document.getElementById('g_fecha').value,
+    "Dirección": document.getElementById('g_direccion').value.trim(),
+    "RUC o DNI": document.getElementById('g_ruc').value.trim(),
+    "Número de instalación": document.getElementById('g_numinst').value.trim(),
+    "Distrito": document.getElementById('g_distrito').value.trim(),
+    "Departamento": document.getElementById('g_departamento').value.trim(),
+    "Coordenadas": document.getElementById('g_coordenadas').value.trim(),
+    "Nombre del contacto": document.getElementById('g_contacto').value.trim(),
+    "Número del contacto": document.getElementById('g_telefono').value.trim(),
+    "Correo de contacto": document.getElementById('g_correo').value.trim()
   };
-  return map[tipo] || tipo;
+  if(showMsg) alert('Información general guardada.');
+  return true;
 }
 
-function editRed(i){
-  const r = redes[i]; if(!r) return;
-  document.getElementById('red_tipo').value = r.tipo || '';
-  document.getElementById('red_marca').value = r.marca || '';
-  document.getElementById('red_serie').value = r.serie || '';
-  document.getElementById('red_codigo').value = r.codigo || '';
-  document.getElementById('red_mesano').value = r.mesano || '';
-  redes.splice(i,1);
-  renderRedList();
-}
-function deleteRed(i){ if(!confirm('Eliminar accesorio?')) return; redes.splice(i,1); renderRedList(); }
-
-/* ---------- Actividades por tanks/red/equipos (mínimo) ---------- */
-function addActivityToTank(tankIndex){
-  const key = `tank${tankIndex}`;
-  const desc = prompt('Descripción actividad para el tanque:');
-  if(!desc) return;
-  actividades[key] = actividades[key] || [];
-  actividades[key].push({descripcion: desc});
-  renderActivitiesForTankList(tankIndex);
-  buildActivitiesUploadArea && buildActivitiesUploadArea(document.getElementById('photoContainer'));
+/* Validation for steps */
+function validateStep(step){
+  if(step===1) return saveGeneral(false);
+  if(step===2){ if(tanks.length===0){ document.getElementById('err-step-2').innerText='Debes agregar al menos un tanque.'; return false; } document.getElementById('err-step-2').innerText=''; return true; }
+  if(step===3){ for(const [tk,obj] of Object.entries(accessoriesByTank)){ for(const [accName,fields] of Object.entries(obj)){ const anyFilled = (fields["Marca"]||'').trim()||(fields["Código"]||'').trim()||(fields["Serie"]||'').trim()||(fields["Mes/Año de fabricación"]||'').trim(); if(anyFilled){ const missing = ["Marca","Código","Serie","Mes/Año de fabricación"].filter(k=>!String(fields[k]||'').trim()); if(missing.length){ document.getElementById('err-step-3').innerText = `En el tanque ${tk} el accesorio "${accName}" no está completo: faltan ${missing.join(', ')}`; return false; } } } } document.getElementById('err-step-3').innerText=''; return true; }
+  if(step===5){ /* equipos validation handled on add */ return true; }
+  return true;
 }
 
-function renderActivitiesForTankList(tankIndex){
-  const containerId = `activitiesTankList_${tankIndex}`;
-  let cont = document.getElementById(containerId);
-  if(!cont){
-    cont = document.createElement('div'); cont.id = containerId; const tanksList = document.getElementById('tanksList'); if(tanksList) tanksList.appendChild(cont);
-  }
-  const key = `tank${tankIndex}`;
-  const arr = actividades[key] || [];
-  cont.innerHTML = '';
-  if(arr.length === 0) { cont.innerHTML = ''; return; }
-  arr.forEach((a,idx)=>{
-    const d = document.createElement('div'); d.style.marginTop='6px';
-    d.innerHTML = `<div style="font-weight:700;color:#fff">${idx+1}. ${a.descripcion || ''}</div>`;
-    cont.appendChild(d);
-  });
+/* STEP 2 Tanks */
+function clearTankForm(){ ['tank_serie','tank_capacidad','tank_anio','tank_tipo','tank_fabricante','tank_porcentaje'].forEach(id=>document.getElementById(id).value=''); document.getElementById('err-tank').innerText=''; }
+function saveTank(){
+  const serie = (document.getElementById('tank_serie').value||'').trim();
+  const tipo = document.getElementById('tank_tipo').value;
+  if(!serie || !tipo){ document.getElementById('err-tank').innerText='N° de serie y Tipo son obligatorios.'; return; }
+  const tank = { serie, capacidad: document.getElementById('tank_capacidad').value.trim(), anio: document.getElementById('tank_anio').value.trim(), tipo, fabricante: document.getElementById('tank_fabricante').value.trim(), porcentaje: document.getElementById('tank_porcentaje').value.trim() };
+  tanks.push(tank);
+  const idx = String(tanks.length);
+  if(!accessoriesByTank[idx]){ accessoriesByTank[idx]={}; accesoriosFijos.forEach(name=>{ accessoriesByTank[idx][name] = {"Marca":"","Código":"","Serie":"","Mes/Año de fabricación":""}; }); }
+  renderTanks(); clearTankForm(); updateTankSelectOptions(); updateProgressUI();
+}
+function renderTanks(){ const container = document.getElementById('tanksList'); container.innerHTML=''; tanks.forEach((t,i)=>{ const idx=i+1; const card=document.createElement('div'); card.className='tank-card'; const info=document.createElement('div'); info.className='tank-info'; info.style.display='grid'; info.style.gridTemplateColumns='repeat(5,1fr)'; info.innerHTML = `<div><strong style="color:#fff">#${idx}</strong></div><div><div class="small">Serie</div><div style="color:#fff">${t.serie||'-'}</div></div><div><div class="small">Capacidad</div><div style="color:#fff">${t.capacidad||'-'}</div></div><div><div class="small">Tipo</div><div style="color:#fff">${t.tipo||'-'}</div></div><div><div class="small">% Actual</div><div style="color:#fff">${t.porcentaje||'-'}</div></div>`; const actions=document.createElement('div'); actions.className='tank-actions'; actions.innerHTML = `<div class="inline-actions"><button class="btn small ghost" onclick="editTank(${i})">Editar</button><button class="btn small warn" onclick="openAccForTank(${i})">Accesorios</button><button class="btn small danger" onclick="deleteTank(${i})">Borrar</button></div>`; card.appendChild(info); card.appendChild(actions); container.appendChild(card); }); }
+function editTank(index){ const t=tanks[index]; if(!t) return; document.getElementById('tank_serie').value=t.serie; document.getElementById('tank_capacidad').value=t.capacidad; document.getElementById('tank_anio').value=t.anio; document.getElementById('tank_tipo').value=t.tipo; document.getElementById('tank_fabricante').value=t.fabricante; document.getElementById('tank_porcentaje').value=t.porcentaje; tanks.splice(index,1); rebuildAccessoriesAfterTankDeletion(); renderTanks(); updateTankSelectOptions(); }
+function deleteTank(index){ if(!confirm('¿Eliminar este tanque?')) return; tanks.splice(index,1); rebuildAccessoriesAfterTankDeletion(); renderTanks(); updateTankSelectOptions(); updateProgressUI(); }
+function rebuildAccessoriesAfterTankDeletion(){ const newMap={}; tanks.forEach((t,i)=>{ const key=String(i+1); newMap[key]=accessoriesByTank[key]||{}; accesoriosFijos.forEach(name=>{ if(!newMap[key][name]) newMap[key][name] = {"Marca":"","Código":"","Serie":"","Mes/Año de fabricación":""}; }); }); accessoriesByTank=newMap; }
+
+/* Tank select */
+function updateTankSelectOptions(){ const sel=document.getElementById('select_tanque'); sel.innerHTML='<option value="">-- seleccionar tanque --</option>'; tanks.forEach((t,i)=>{ const opt=document.createElement('option'); opt.value=String(i+1); opt.textContent = `${i+1} · Serie: ${t.serie||'-'}`; sel.appendChild(opt); }); document.getElementById('status-2').innerText = `${tanks.length} tanques`; }
+
+/* STEP 3 Accessories (modal) */
+document.getElementById('select_tanque').addEventListener('change', function(){ updateAccArea(this.value); });
+function updateAccArea(tankIndex){ const titulo=document.getElementById('acc-titulo'); if(!tankIndex){ titulo.innerText='Accesorio del tanque —'; document.getElementById('acc-list').innerHTML='<div class="small">Selecciona un tanque para ver/editar sus accesorios.</div>'; return; } const t=tanks[Number(tankIndex)-1]; titulo.textContent = `Accesorio del tanque ${tankIndex} de serie : ${t? t.serie: '-'}`; document.getElementById('acc-titulo').style.background='#f3f3f3'; document.getElementById('acc-titulo').style.color='#041018'; if(!accessoriesByTank[tankIndex]){ accessoriesByTank[tankIndex]={}; accesoriosFijos.forEach(name=>{ accessoriesByTank[tankIndex][name] = {"Marca":"","Código":"","Serie":"","Mes/Año de fabricación":""}; }); } renderAccList(tankIndex); accesoriosOpcionales.forEach((name,i)=>{ const elId = (i===0?'opt_exceso_retorno': i===1? 'opt_exceso_bypass':'opt_val3'); const exists = !!accessoriesByTank[tankIndex][name]; document.getElementById(elId).checked = !!exists; }); }
+function renderAccList(tankIndex){ const cont=document.getElementById('acc-list'); cont.innerHTML=''; const accMap=accessoriesByTank[tankIndex] || {}; const table=document.createElement('table'); table.style.width='100%'; table.style.borderCollapse='collapse'; table.innerHTML=`<thead style="background:#f3f3f3;color:#041018"><tr><th style="padding:8px;text-align:left">Accesorio</th><th style="padding:8px">Marca</th><th style="padding:8px">Código</th><th style="padding:8px">Serie</th><th style="padding:8px">Mes/Año</th></tr></thead>`; const tbody=document.createElement('tbody'); for(const accName of Object.keys(accMap)){ const fields=accMap[accName]; const tr=document.createElement('tr'); tr.innerHTML = `<td style="padding:8px;border-bottom:1px solid #eee">${accName}</td><td style="padding:8px;border-bottom:1px solid #eee"><input data-acc="${accName}" data-tank="${tankIndex}" data-field="Marca" value="${fields["Marca"]||''}" style="width:100%"></td><td style="padding:8px;border-bottom:1px solid #eee"><input data-acc="${accName}" data-tank="${tankIndex}" data-field="Código" value="${fields["Código"]||''}" style="width:100%"></td><td style="padding:8px;border-bottom:1px solid #eee"><input data-acc="${accName}" data-tank="${tankIndex}" data-field="Serie" value="${fields["Serie"]||''}" style="width:100%"></td><td style="padding:8px;border-bottom:1px solid #eee"><input data-acc="${accName}" data-tank="${tankIndex}" data-field="Mes/Año de fabricación" value="${fields["Mes/Año de fabricación"]||''}" style="width:100%"></td>`; tbody.appendChild(tr); } table.appendChild(tbody); cont.appendChild(table); cont.querySelectorAll('input[data-acc]').forEach(inp=>{ inp.addEventListener('input', function(){ const t=this.getAttribute('data-tank'); const acc=this.getAttribute('data-acc'); const field=this.getAttribute('data-field'); if(!accessoriesByTank[t]) accessoriesByTank[t]={}; if(!accessoriesByTank[t][acc]) accessoriesByTank[t][acc]={"Marca":"","Código":"","Serie":"","Mes/Año de fabricación":""}; accessoriesByTank[t][acc][field]=this.value; }); }); }
+document.getElementById('opt_exceso_retorno').addEventListener('change', function(){ toggleOptionalAccessory(this.checked, "Válvula exceso de flujo (Retorno)"); });
+document.getElementById('opt_exceso_bypass').addEventListener('change', function(){ toggleOptionalAccessory(this.checked, "Válvula exceso de flujo (Bypass)"); });
+document.getElementById('opt_val3').addEventListener('change', function(){ toggleOptionalAccessory(this.checked, "Val 3"); });
+function toggleOptionalAccessory(enabled,name){ const sel=document.getElementById('select_tanque'); const tankIndex=sel.value; if(!tankIndex){ alert('Seleccione primero un tanque.'); if(name.includes('Retorno')) document.getElementById('opt_exceso_retorno').checked=false; if(name.includes('Bypass')) document.getElementById('opt_exceso_bypass').checked=false; if(name.includes('Val 3')) document.getElementById('opt_val3').checked=false; return; } if(!accessoriesByTank[tankIndex]) accessoriesByTank[tankIndex]={}; if(enabled){ accessoriesByTank[tankIndex][name]={"Marca":"","Código":"","Serie":"","Mes/Año de fabricación":""}; } else { delete accessoriesByTank[tankIndex][name]; } renderAccList(tankIndex); }
+function openAccModalFromStep3(){ const sel=document.getElementById('select_tanque'); const t=sel.value||''; if(!t){ alert('Seleccione un tanque para editar sus accesorios.'); return; } openModalForTank(t); }
+function openAccForTank(index){ const idx = index+1; const sel=document.getElementById('select_tanque'); sel.value=String(idx); updateAccArea(String(idx)); openModalForTank(String(idx)); }
+function openModalForTank(tankIndex){ const modal=document.getElementById('modalAcc'); const t=tanks[Number(tankIndex)-1]; modal.classList.add('active'); document.getElementById('modalTitle').innerText = `Editar accesorios de tanque ${tankIndex} de serie : ${t? t.serie:'-'}`; const tbody=document.querySelector('#modalAccTable tbody'); tbody.innerHTML=''; const accMap=accessoriesByTank[tankIndex]||{}; const keys=[...Object.keys(accMap)]; keys.forEach(name=>{ const fields=accMap[name]; const tr=document.createElement('tr'); tr.innerHTML = `<td class="accesorio" style="padding:6px">${name}</td><td style="padding:6px"><input data-modal-acc="${name}" style="color:var(--accent)" data-modal-field="Marca" value="${fields["Marca"]||''}"></td><td style="padding:6px"><input data-modal-acc="${name}" style="color:var(--accent)" data-modal-field="Código" value="${fields["Código"]||''}"></td><td style="padding:6px"><input data-modal-acc="${name}" style="color:var(--accent)" data-modal-field="Serie" value="${fields["Serie"]||''}"></td><td style="padding:6px"><input data-modal-acc="${name}" style="color:var(--accent)" data-modal-field="Mes/Año de fabricación" value="${fields["Mes/Año de fabricación"]||''}"></td>`; tbody.appendChild(tr); }); }
+function closeAccModal(){ document.getElementById('modalAcc').classList.remove('active'); }
+function saveAccModal(){ const sel=document.getElementById('select_tanque'); const t=sel.value||''; if(!t){ closeAccModal(); return; } const inputs=document.querySelectorAll('#modalAccTable input[data-modal-acc]'); inputs.forEach(inp=>{ const acc=inp.getAttribute('data-modal-acc'); const field=inp.getAttribute('data-modal-field'); if(!accessoriesByTank[t]) accessoriesByTank[t]={}; if(!accessoriesByTank[t][acc]) accessoriesByTank[t][acc]={"Marca":"","Código":"","Serie":"","Mes/Año de fabricación":""}; accessoriesByTank[t][acc][field]=inp.value; }); renderAccList(t); closeAccModal(); }
+
+/* STEP 4 redes */
+function clearRedForm(){ ['red_tipo','red_marca','red_serie','red_codigo','red_mesano'].forEach(id=>document.getElementById(id).value=''); document.querySelectorAll('input[name="zona_med"]').forEach(r=>r.checked=false); document.getElementById('zonaMedidoresControls').style.display='none'; }
+document.getElementById('red_tipo').addEventListener('change', function(){ const v=this.value; if(v==='zona_medidores') document.getElementById('zonaMedidoresControls').style.display='block'; else document.getElementById('zonaMedidoresControls').style.display='none'; });
+function addRed(){ const tipo=document.getElementById('red_tipo').value; if(!tipo){ alert('Selecciona tipo de accesorio'); return; } if(tipo==='zona_medidores'){ const sel=document.querySelector('input[name="zona_med"]:checked'); if(!sel){ alert('Selecciona Tiene / No tiene para zona de medidores'); return; } zona_medidores_val = sel.value === 'true'; redes = redes.filter(r=> r.Tipo !== 'zona_medidores'); redes.push({"Tipo":"zona_medidores","Marca":"","Serie":"","Código": zona_medidores_val ? "True" : "False","Mes/Año de fabricación":""}); renderRedList(); clearRedForm(); return; } const obj={"Tipo":tipo,"Marca":document.getElementById('red_marca').value.trim()||"","Serie":document.getElementById('red_serie').value.trim()||"","Código":document.getElementById('red_codigo').value.trim()||"","Mes/Año de fabricación":document.getElementById('red_mesano').value.trim()||""}; redes.push(obj); renderRedList(); clearRedForm(); }
+function renderRedList(){ const c=document.getElementById('redList'); c.innerHTML=''; if(redes.length===0){ c.innerHTML='<div class="small">No hay accesorios en redes agregados.</div>'; return; } redes.forEach((r,i)=>{ const div=document.createElement('div'); div.className='tank-card'; div.style.display='flex'; div.style.justifyContent='space-between'; const left=document.createElement('div'); left.innerHTML = `<div style="font-weight:700;color:#fff">${i+1}. ${humanReadableTipo(r.Tipo)}</div><div style="color:#dff9ff;margin-top:6px">${(r.Marca||'-')} — ${(r.Serie||'-')} — ${(r.Código||'-')}</div>`; const right=document.createElement('div'); right.innerHTML = `<div style="display:flex;gap:8px"><button class="btn small ghost" onclick="editRed(${i})">Editar</button><button class="btn small danger" onclick="deleteRed(${i})">Borrar</button></div>`; div.appendChild(left); div.appendChild(right); c.appendChild(div); }); }
+function humanReadableTipo(tipo){ const map = {"llenado_toma_desplazada":"Válvula de llenado de toma desplazada","retorno_toma_desplazada":"Válvula de retorno toma desplazada","alivio_hidrostatico":"Válvula de alivio hidrostático","regulador_primera_etapa":"Regulador primera etapa","alivio":"Válvula de alivio","regulador_2da":"Regulador segunda etapa","pull_away":"Válvula Pull Away","zona_medidores":"Zona de medidores"}; return map[tipo]||tipo; }
+function editRed(i){ const r=redes[i]; if(!r) return; document.getElementById('red_tipo').value=r.Tipo; document.getElementById('red_marca').value=r.Marca||''; document.getElementById('red_serie').value=r.Serie||''; document.getElementById('red_codigo').value=r.Código||''; document.getElementById('red_mesano').value=r["Mes/Año de fabricación"]||''; redes.splice(i,1); renderRedList(); }
+function deleteRed(i){ if(!confirm('Eliminar accesorio en red?')) return; redes.splice(i,1); renderRedList(); }
+
+/* STEP 5 equipos */
+document.getElementById('eq_tipo').addEventListener('change', function(){ const tipo=this.value; const nameInput=document.getElementById('eq_name'); const countForType = equipos.filter(e=>e["Tipo de equipo"]===tipo).length; const nextIdx=countForType+1; if(tipo){ const pretty=tipo.replace(/_/g,' '); const capital = pretty.charAt(0).toUpperCase()+pretty.slice(1); nameInput.value = `${capital}${nextIdx}`; } else nameInput.value=''; renderDynamicFields(tipo); });
+function renderDynamicFields(tipo){ const container=document.getElementById('dynamicFields'); container.innerHTML=''; if(!tipo) return; const cols = estructuraEquipos[tipo]||[]; cols.forEach(col=>{ if(col==='Equipo') return; const wrap=document.createElement('div'); wrap.style.minWidth='160px'; const safeId='dyn_'+col.replace(/\s/g,'_').replace(/[()]/g,''); wrap.innerHTML = `<div class="label" style="font-size:12px">${col}</div><div class="field"><input id="${safeId}" type="text"></div>`; container.appendChild(wrap); }); }
+function addEquipo(){ const tipo=document.getElementById('eq_tipo').value; if(!tipo){ alert('Selecciona tipo de equipo'); return; } const cols=estructuraEquipos[tipo]; if(!cols){ alert('Tipo de equipo inválido'); return; } const eq={"Tipo de equipo": tipo}; const nombre=document.getElementById('eq_name').value||''; eq["Equipo"]=nombre; cols.forEach(col=>{ if(col==='Equipo') return; const id='dyn_'+col.replace(/\s/g,'_').replace(/[()]/g,''); const el=document.getElementById(id); eq[col] = el? el.value.trim():''; }); const missing = cols.filter(c=>!String(eq[c]||'').trim()); if(missing.length){ alert(`Faltan campos en equipo: ${missing.join(', ')}`); return; } equipos.push(eq); document.getElementById('eq_tipo').value=''; document.getElementById('eq_name').value=''; document.getElementById('dynamicFields').innerHTML=''; renderEquiposList(); }
+function renderEquiposList(){ const c=document.getElementById('equiposList'); c.innerHTML=''; if(equipos.length===0){ c.innerHTML='<div class="small">No hay equipos agregados.</div>'; return; } equipos.forEach((eq,i)=>{ const div=document.createElement('div'); div.className='tank-card'; div.style.display='flex'; div.style.justifyContent='space-between'; const left=document.createElement('div'); left.innerHTML = `<div style="font-weight:700;color:#fff">${i+1}. ${eq["Equipo"]||'-'}</div><div style="color:#dff9ff;margin-top:6px">Tipo: ${eq["Tipo de equipo"]}</div>`; const keys = Object.keys(eq).filter(k=>k!=='Equipo'&&k!=='Tipo de equipo'); if(keys.length){ left.innerHTML += `<div style="color:#dff9ff;margin-top:6px">${keys.map(k=>`${k}: ${(eq[k]||'-')}`).join(' — ')}</div>`; } const right=document.createElement('div'); right.innerHTML = `<div style="display:flex;gap:8px"><button class="btn small ghost" onclick="editEquipo(${i})">Editar</button><button class="btn small danger" onclick="deleteEquipo(${i})">Borrar</button></div>`; div.appendChild(left); div.appendChild(right); c.appendChild(div); }); }
+function editEquipo(i){ const eq=equipos[i]; if(!eq) return; document.getElementById('eq_tipo').value = eq["Tipo de equipo"]; document.getElementById('eq_name').value = eq["Equipo"]; renderDynamicFields(eq["Tipo de equipo"]); const cols = estructuraEquipos[eq["Tipo de equipo"]]; cols.forEach(col=>{ if(col==='Equipo') return; const id='dyn_'+col.replace(/\s/g,'_').replace(/[()]/g,''); const el=document.getElementById(id); if(el) el.value = eq[col]||''; }); equipos.splice(i,1); renderEquiposList(); }
+function deleteEquipo(i){ if(!confirm('Eliminar equipo?')) return; equipos.splice(i,1); renderEquiposList(); }
+
+/* Actividades modal */
+function openActivitiesModal(){ const modal=document.getElementById('modalActivities'); modal.classList.add('active'); populateActivitiesDestinations(); renderActivitiesList(); }
+function closeActivitiesModal(){ document.getElementById('modalActivities').classList.remove('active'); }
+function populateActivitiesDestinations(){ const sel=document.getElementById('act_dest'); sel.innerHTML=''; const defaultOpt=document.createElement('option'); defaultOpt.value=''; defaultOpt.textContent='-- seleccionar --'; sel.appendChild(defaultOpt); tanks.forEach((t,i)=>{ const opt=document.createElement('option'); opt.value=`tank${i+1}`; opt.textContent=`Tanque ${i+1} · Serie: ${t.serie||'-'}`; sel.appendChild(opt); }); const opt1=document.createElement('option'); opt1.value='red_llenado_retorno'; opt1.textContent='Redes - Llenado/Retorno'; sel.appendChild(opt1); const opt2=document.createElement('option'); opt2.value='red_consumo'; opt2.textContent='Redes - Consumo'; sel.appendChild(opt2); }
+function addActivity(){ const dest=document.getElementById('act_dest').value; const desc=(document.getElementById('act_desc').value||'').trim(); if(!dest||!desc){ alert('Selecciona destino y describe la actividad'); return; } actividades[dest]=actividades[dest]||[]; actividades[dest].push({descripcion:desc}); document.getElementById('act_desc').value=''; renderActivitiesList(); }
+function renderActivitiesList(){ const c=document.getElementById('activitiesList'); c.innerHTML=''; const keys=Object.keys(actividades); if(keys.length===0){ c.innerHTML='<div class="small">No hay actividades registradas.</div>'; return; } keys.forEach(k=>{ const div=document.createElement('div'); div.style.padding='8px'; div.style.borderBottom='1px solid #eee'; const title=document.createElement('div'); title.style.fontWeight='700'; title.style.color='#041018'; title.textContent = k; div.appendChild(title); actividades[k].forEach((a,i)=>{ const row=document.createElement('div'); row.style.display='flex'; row.style.justifyContent='space-between'; row.style.marginTop='6px'; row.innerHTML = `<div>${i+1}. ${a.descripcion}</div><div><button class="btn small ghost" onclick="removeActivity('${k}',${i})">Borrar</button></div>`; div.appendChild(row); }); c.appendChild(div); }); }
+function removeActivity(dest,index){ if(!confirm('Eliminar actividad?')) return; actividades[dest].splice(index,1); if(actividades[dest].length===0) delete actividades[dest]; renderActivitiesList(); }
+
+/* BUILD PAYLOAD */
+function buildPayload(){
+  if(!saveGeneral(false)){ showStep(1); throw 'General incomplete'; }
+  if(tanks.length===0){ showStep(2); throw 'Se requiere al menos un tanque'; }
+  const tanquesArr = tanks.map(t=>({ serie: t.serie||'', capacidad: t.capacidad||'', anio: t.anio||'', tipo: t.tipo||'', fabricante: t.fabricante||'', porcentaje: t.porcentaje||'' }));
+  const accByTankPayload = {}; Object.keys(accessoriesByTank).forEach(k=>{ const accs = accessoriesByTank[k]; const out={}; Object.keys(accs).forEach(name=>{ const fields = accs[name]; const any = Object.values(fields).some(v=>String(v||'').trim() !== ''); if(any){ out[name] = {"Marca": fields["Marca"]||'',"Código": fields["Código"]||'',"Serie": fields["Serie"]||'',"Mes/Año de fabricación": fields["Mes/Año de fabricación"]||''}; } }); if(Object.keys(out).length) accByTankPayload[k]=out; });
+  const redPayload = redes.map(r=>({ "Tipo": r.Tipo||'',"Marca": r.Marca||'',"Serie": r.Serie||'',"Código": r.Código||'',"Mes/Año de fabricación": r["Mes/Año de fabricación"]||'' }));
+  const equiposPayload = equipos.map(eq=>Object.assign({}, eq));
+  const observaciones = { "7.1": document.getElementById('obs_71').value.trim(), "7.2": document.getElementById('obs_72').value.trim(), "7.3": document.getElementById('obs_73').value.trim(), "7.4": document.getElementById('obs_74').value.trim(), "7.5": document.getElementById('obs_75').value.trim() };
+  const payload = { general: generalInfo, tanques: tanquesArr, accesoriosTanque: accByTankPayload, accesoriosRed: redPayload, equipos: equiposPayload, observaciones: observaciones, actividades: actividades };
+  return payload;
 }
 
-/* addActivityToRed & addActivityToEquipo minimal */
-function addActivityToRed(){
-  const sel = document.getElementById('select_red_for_activity'); if(!sel) return;
-  const val = sel.value; if(!val) { alert('Selecciona red'); return; }
-  const desc = (document.getElementById('activity_red_desc').value || '').trim();
-  if(!desc){ alert('Describe la actividad'); return; }
-  actividades[val] = actividades[val] || [];
-  actividades[val].push({descripcion: desc});
-  renderActivitiesRedList();
-  buildActivitiesUploadArea && buildActivitiesUploadArea(document.getElementById('photoContainer'));
-}
-function renderActivitiesRedList(){
-  const el = document.getElementById('activitiesRedList'); if(!el) return;
-  el.innerHTML = '';
-  Object.keys(actividades).forEach(k=>{
-    if(!k.startsWith('red')) return;
-  });
-  const arr = actividades['red_llenado_retorno'] || [];
-  if(arr.length === 0) el.innerHTML = '<div class="small">No hay actividades en redes.</div>';
-  else arr.forEach((a,i)=>{ const div=document.createElement('div'); div.className='tank-card'; div.innerHTML=`<div>${i+1}. ${a.descripcion}</div>`; el.appendChild(div); });
-}
-
-function addActivityToEquipo(){
-  const sel = document.getElementById('select_eq_for_activity'); if(!sel) return;
-  const val = sel.value; if(!val) { alert('Selecciona equipo'); return; }
-  const desc = (document.getElementById('activity_eq_desc').value || '').trim(); if(!desc){ alert('Describe la actividad'); return; }
-  actividades[val] = actividades[val] || [];
-  actividades[val].push({descripcion: desc});
-  renderActivitiesEquipoList();
-  buildActivitiesUploadArea && buildActivitiesUploadArea(document.getElementById('photoContainer'));
-}
-function renderActivitiesEquipoList(){
-  const el = document.getElementById('activitiesEquipoList'); if(!el) return;
-  el.innerHTML = '';
-  const arr = actividades['equipo_1'] || [];
-  if(arr.length === 0) el.innerHTML = '<div class="small">No hay actividades por equipo.</div>';
-  else arr.forEach((a,i)=>{ const div=document.createElement('div'); div.className='tank-card'; div.innerHTML=`<div>${i+1}. ${a.descripcion}</div>`; el.appendChild(div); });
-}
-
-/* ---------- Imagenes: utilidades de resize (mínimas) ---------- */
-const TARGET_W = 1500;
-const TARGET_H = 1000;
-function fileToImage(file){
-  return new Promise((resolve,reject)=>{
-    const fr = new FileReader();
-    fr.onload = ()=> {
-      const img = new Image();
-      img.onload = ()=> resolve(img);
-      img.onerror = reject;
-      img.src = fr.result;
-    };
-    fr.onerror = reject;
-    fr.readAsDataURL(file);
-  });
-}
-function resizeImageToTarget(file){
-  return fileToImage(file).then(img=>{
-    const canvas = document.createElement('canvas');
-    canvas.width = TARGET_W; canvas.height = TARGET_H;
-    const ctx = canvas.getContext('2d');
-    const scale = Math.max(TARGET_W / img.width, TARGET_H / img.height);
-    const sw = TARGET_W / scale;
-    const sh = TARGET_H / scale;
-    const sx = (img.width - sw)/2;
-    const sy = (img.height - sh)/2;
-    ctx.fillStyle = '#fff'; ctx.fillRect(0,0,canvas.width,canvas.height);
-    ctx.drawImage(img, sx, sy, sw, sh, 0,0, TARGET_W, TARGET_H);
-    return new Promise((resolve)=> {
-      canvas.toBlob(blob=>{
-        let outFile;
-        try{ outFile = new File([blob], (file.name||'img.jpg').replace(/\s+/g,'_'), {type:blob.type}); }
-        catch(e){ blob.name = (file.name||'img.jpg'); outFile = blob; }
-        resolve(outFile);
-      }, 'image/jpeg', 0.9);
-    });
-  });
-}
-
-/* ---------- Bloques de fotos (fetch mock/real) ---------- */
+/* -------------------------
+   STEP 7: Fetch bloques from server and build table
+   ------------------------- */
 async function fetchBloquesFotos(){
-  if(!bloquesFotosCache || bloquesFotosCache.length === 0){
-    bloquesFotosCache = [
-      {clave:'foto_01_tanque', titulo:'Tanque - Vista general', fotos:1, aplica:true},
-      {clave:'foto_02_válvula', titulo:'Válvula - detalle', fotos:1, aplica:true},
-      {clave:'foto_10_red_llenado_retorno', titulo:'Actividades red - antes/despues', fotos:2, aplica:true}
-    ];
-  }
-  return Promise.resolve(bloquesFotosCache);
+  document.getElementById('err-step-7').innerText = '';
+  try {
+    const payload = { general: generalInfo, tanques: tanks, accesoriosTanque: accessoriesByTank, redes: redes, equipos: equipos, actividades: actividades };
+    const res = await fetch('/bloques_fotos', { method:'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+    if(!res.ok) throw new Error('Error al solicitar bloques de fotos');
+    const data = await res.json();
+    bloquesFotosCache = (data||[]).sort((a,b)=> (a.order||0)-(b.order||0));
+    buildPhotoTable();
+  } catch(err){ console.error(err); document.getElementById('err-step-7').innerText = 'No fue posible obtener la lista de fotos desde el servidor.'; buildPhotoFieldsFallback(); }
 }
 
-/* ---------- Construcción de tabla de fotos ---------- */
+/* Fallback: local generation if server fails (still keep same keys) */
+function buildPhotoFieldsFallback(){
+  const container = document.getElementById('photoContainer'); container.innerHTML = '<div class="small-muted">No se pudo conectar al servidor; se generaron subtítulos localmente.</div>';
+  // we still want to show user something; but server is preferred.
+}
+
+/* Build photo table UI */
 function buildPhotoTable(){
-  const container = document.getElementById('photoContainer');
-  if(!container) return;
-  container.innerHTML = '';
-
-  if(!bloquesFotosCache || bloquesFotosCache.length === 0){
-    container.innerHTML = '<div class="small-muted">No hay bloques fotográficos definidos.</div>';
-    return;
-  }
-
-  const table = document.createElement('table');
-  table.className = 'photo-table';
-  const thead = document.createElement('thead');
-  thead.innerHTML = `<tr><th>Subtítulo</th><th style="width:120px">N° Fotos</th><th style="width:160px">Estado</th><th style="width:220px">Acción</th></tr>`;
-  table.appendChild(thead);
+  const container = document.getElementById('photoContainer'); container.innerHTML = '';
+  if(!bloquesFotosCache || !bloquesFotosCache.length){ container.innerHTML = '<div class="small-muted">No hay bloques fotográficos definidos.</div>'; return; }
+  const table = document.createElement('table'); table.className='photo-table';
+  const thead = document.createElement('thead'); thead.innerHTML = `<tr><th>Subtítulo</th><th style="width:120px">N° Fotos</th><th style="width:150px">Estado</th><th style="width:320px">Acción</th></tr>`; table.appendChild(thead);
   const tbody = document.createElement('tbody');
-
   bloquesFotosCache.forEach(block=>{
-    const tr = document.createElement('tr');
-    if(!block.aplica) tr.classList.add('disabled');
-
-    const tdTitle = document.createElement('td');
-    tdTitle.innerHTML = `<div class="photo-row-title">${block.titulo}</div><div class="photo-row-sub">${block.clave}</div>`;
-
-    const tdCount = document.createElement('td');
-    tdCount.innerHTML = `<div class="photo-count">${block.fotos} foto(s)</div>`;
-
-    const tdStatus = document.createElement('td');
-    const badge = document.createElement('span'); badge.className='badge-state badge-red'; badge.innerText='Sin subir';
-    tdStatus.appendChild(badge);
-
-    const tdAction = document.createElement('td'); tdAction.className = 'photo-action';
-    const input = document.createElement('input'); input.type='file'; input.accept='image/*';
-    if(block.fotos && block.fotos > 1) input.multiple = true;
-    input.className = 'file-input-hidden';
-    input.dataset.clave = block.clave;
-    const previewWrap = document.createElement('div'); previewWrap.style.display='flex'; previewWrap.style.gap='6px'; previewWrap.style.alignItems='center';
-
-    input.addEventListener('change', async (ev)=>{
-      const files = Array.from(ev.target.files||[]);
-      if(files.length === 0) return;
-      if(block.fotos && files.length > block.fotos){ alert(`Máximo ${block.fotos} fotos para este bloque.`); return; }
-      previewWrap.innerHTML = '';
-      const processed = [];
-      for(const f of files){
-        const thumb = document.createElement('img'); thumb.className='photo-preview'; thumb.style.width='120px'; thumb.style.height='80px'; thumb.src = URL.createObjectURL(f); previewWrap.appendChild(thumb);
-        try{ const r = await resizeImageToTarget(f); processed.push(r); } catch(e){ processed.push(f); }
-      }
-      uploadedPhotos[block.clave] = processed;
-      updatePhotoRowStatus(block.clave, tr, badge, block.fotos);
-    });
-
-    const btn = document.createElement('button'); btn.type='button'; btn.className='btn small primary'; btn.innerText = block.aplica ? (block.fotos > 1 ? 'Subir fotos' : 'Subir foto') : 'No aplica';
-    btn.disabled = !block.aplica; btn.addEventListener('click', ()=> input.click());
-    const btnView = document.createElement('button'); btnView.type='button'; btnView.className='btn small ghost'; btnView.innerText='Ver'; btnView.disabled=true;
-    btnView.addEventListener('click', ()=>{
-      const list = uploadedPhotos[block.clave] || [];
-      if(!list.length) { alert('No hay imágenes.'); return; }
-      list.forEach(f=>{ const url = URL.createObjectURL(f); window.open(url); });
-    });
-
+    const tr=document.createElement('tr'); if(!block.aplica) tr.classList.add('disabled');
+    const tdTitle=document.createElement('td'); const titleDiv=document.createElement('div'); titleDiv.className='photo-row-title'; titleDiv.innerText = block.titulo; tdTitle.appendChild(titleDiv);
+    const tdCount=document.createElement('td'); tdCount.innerHTML = `<div class="photo-count">${block.fotos} foto(s)</div>`;
+    const tdStatus=document.createElement('td'); const badge=document.createElement('span'); badge.className='badge-state badge-red'; badge.innerText='Sin subir'; tdStatus.appendChild(badge);
+    const tdAction=document.createElement('td'); tdAction.className='photo-action';
+    // file input hidden
+    const input=document.createElement('input'); input.type='file'; input.accept='image/*'; if(block.fotos && block.fotos>1) input.multiple=true; input.className='file-input-hidden'; input.dataset.clave = block.clave;
+    // preview container
+    const previewWrap = document.createElement('div'); previewWrap.style.display='flex'; previewWrap.style.gap='8px'; previewWrap.style.alignItems='center';
+    // visible upload button
+    const btn = document.createElement('button'); btn.className='btn small primary'; btn.type='button'; btn.innerText = block.aplica ? (block.fotos > 1 ? 'Subir fotos' : 'Subir foto') : 'No aplica'; btn.disabled = !block.aplica;
+    btn.addEventListener('click', ()=>{ if(!block.aplica) return; input.click(); });
+    // view button
+    const btnView=document.createElement('button'); btnView.className='btn small ghost'; btnView.type='button'; btnView.innerText='Ver'; btnView.disabled=true; btnView.addEventListener('click', ()=>{ const files = uploadedPhotos[block.clave]||[]; if(!files.length){ alert('No hay imágenes para ver.'); return; } files.forEach(f=>{ const url=URL.createObjectURL(f); window.open(url); }); });
+    // append elements
     tdAction.appendChild(input); tdAction.appendChild(btn); tdAction.appendChild(btnView); tdAction.appendChild(previewWrap);
-    tr.dataset.clave = block.clave;
     tr.appendChild(tdTitle); tr.appendChild(tdCount); tr.appendChild(tdStatus); tr.appendChild(tdAction);
+    tr.dataset.clave = block.clave;
     tbody.appendChild(tr);
-  });
 
-  table.appendChild(tbody);
-  container.appendChild(table);
-
-  if(typeof buildActivitiesUploadArea === 'function') buildActivitiesUploadArea(container);
-}
-
-function updatePhotoRowStatus(clave, trElem, badgeElem, fotosNecesarias){
-  const files = uploadedPhotos[clave] || [];
-  const n = Array.isArray(files) ? files.length : 0;
-  const badge = badgeElem;
-  const tr = trElem;
-  const btnView = tr.querySelector('button.ghost');
-  if(n === 0){
-    badge.className = 'badge-state badge-red';
-    badge.innerText = 'Sin subir';
-    if(btnView) btnView.disabled = true;
-  } else if(fotosNecesarias && n < fotosNecesarias){
-    badge.className = 'badge-state badge-yellow';
-    badge.innerText = `${n}/${fotosNecesarias}`;
-    if(btnView) btnView.disabled = false;
-  } else {
-    badge.className = 'badge-state badge-green';
-    badge.innerText = fotosNecesarias ? `${n}/${fotosNecesarias}` : `${n}`;
-    if(btnView) btnView.disabled = false;
-  }
-}
-
-/* ---------- Activities upload area (10.X) ---------- */
-function buildActivitiesUploadArea(container){
-  const existing = document.getElementById('activitiesUploadWrapper'); if(existing) existing.remove();
-  const wrapper = document.createElement('div'); wrapper.id = 'activitiesUploadWrapper'; wrapper.style.marginTop = '14px';
-  wrapper.innerHTML = `<div class="card-header"><div><div class="card-title">10 · Trabajos realizados (Actividades) — Subida ANTES / DESPUÉS</div><div class="hint">Para cada actividad sube la(s) foto(s) ANTES y DESPUÉS. Las claves se asignan automáticamente.</div></div></div>`;
-  Object.keys(actividades).forEach(key => {
-    const arr = actividades[key] || [];
-    if(!arr || !arr.length) return;
-    const sec = document.createElement('div'); sec.style.marginTop = '10px';
-    const human = key.startsWith('tank') ? `Tanque ${key.replace('tank','')}` : (key.startsWith('red_') ? (key==='red_llenado_retorno' ? 'Red Llenado/Retorno' : 'Red Consumo') : key);
-    sec.innerHTML = `<div style="font-weight:800;margin-bottom:6px;color:#fff">${human}</div>`;
-    arr.forEach((act, aidx) => {
-      const card = document.createElement('div'); card.className = 'photo-card'; card.style.display = 'grid'; card.style.gridTemplateColumns = '1fr 1fr 1fr'; card.style.gap = '8px'; card.style.alignItems = 'start';
-      const descDiv = document.createElement('div'); descDiv.innerHTML = `<div style="font-weight:700;color:#004085">${aidx+1}. ${act.descripcion}</div><div class="small-muted">Clave base: ${key} — actividad ${aidx+1}</div>`;
-      const beforeCol = document.createElement('div'); beforeCol.innerHTML = `<div class="label">ANTES</div>`; const inpBefore = document.createElement('input'); inpBefore.type='file'; inpBefore.accept='image/*'; inpBefore.multiple = true; inpBefore.style.marginTop='6px'; const prevB = document.createElement('div'); prevB.style.display='flex'; prevB.style.gap='6px'; prevB.style.marginTop='6px'; beforeCol.appendChild(inpBefore); beforeCol.appendChild(prevB);
-      const afterCol = document.createElement('div'); afterCol.innerHTML = `<div class="label">DESPUÉS</div>`; const inpAfter = document.createElement('input'); inpAfter.type='file'; inpAfter.accept='image/*'; inpAfter.multiple = true; inpAfter.style.marginTop='6px'; const prevA = document.createElement('div'); prevA.style.display='flex'; prevA.style.gap='6px'; prevA.style.marginTop='6px'; afterCol.appendChild(inpAfter); afterCol.appendChild(prevA);
-
-      inpBefore.addEventListener('change', async (ev)=>{
-        const files = Array.from(ev.target.files || []);
-        prevB.innerHTML = '';
-        const processed = [];
-        for(const f of files){
-          const thumb = document.createElement('img'); thumb.style.width='120px'; thumb.style.height='80px'; thumb.style.objectFit='cover';
-          thumb.src = URL.createObjectURL(f);
-          prevB.appendChild(thumb);
-          try{ const resized = await resizeImageToTarget(f); processed.push(resized); }catch(e){ processed.push(f); }
-        }
-        act.antesFiles = processed;
-        const aIdxOne = aidx+1;
-        const claveBase = key.replace(/^tank/,'tank');
-        const clave = `foto_10_${claveBase}_act${aIdxOne}__antes`;
-        uploadedPhotos[clave] = processed;
-        updateTableCellsStatusFromUploads();
+    // handle input change to store files and create previews
+    input.addEventListener('change', (ev)=>{
+      const files = Array.from(ev.target.files||[]);
+      if(files.length===0) return;
+      if(block.fotos && files.length > block.fotos){ alert(`Se permiten máximo ${block.fotos} fotos para este subtítulo.`); return; }
+      uploadedPhotos[block.clave] = files;
+      // show small previews in previewWrap (scaled to 150x100 px to approximate 15x10 cm at doc)
+      previewWrap.innerHTML = '';
+      files.forEach(f=>{
+        const img = document.createElement('img'); img.className='photo-preview-inline'; img.src = URL.createObjectURL(f); img.onload = ()=>{ URL.revokeObjectURL(img.src); };
+        previewWrap.appendChild(img);
       });
-
-      inpAfter.addEventListener('change', async (ev)=>{
-        const files = Array.from(ev.target.files || []);
-        prevA.innerHTML = '';
-        const processed = [];
-        for(const f of files){
-          const thumb = document.createElement('img'); thumb.style.width='120px'; thumb.style.height='80px'; thumb.style.objectFit='cover';
-          thumb.src = URL.createObjectURL(f);
-          prevA.appendChild(thumb);
-          try{ const resized = await resizeImageToTarget(f); processed.push(resized); }catch(e){ processed.push(f); }
-        }
-        act.despuesFiles = processed;
-        const aIdxOne = aidx+1;
-        const claveBase = key.replace(/^tank/,'tank');
-        const clave = `foto_10_${claveBase}_act${aIdxOne}__despues`;
-        uploadedPhotos[clave] = processed;
-        updateTableCellsStatusFromUploads();
-      });
-
-      card.appendChild(descDiv); card.appendChild(beforeCol); card.appendChild(afterCol);
-      sec.appendChild(card);
+      updatePhotoRowStatus(block.clave, tr, badge, block.fotos, btnView);
     });
-    wrapper.appendChild(sec);
+
+    updatePhotoRowStatus(block.clave, tr, badge, block.fotos, btnView);
   });
-  container.appendChild(wrapper);
+  table.appendChild(tbody); container.appendChild(table);
 }
 
-/* ---------- Sincronización badges desde uploadedPhotos ---------- */
-function updateTableCellsStatusFromUploads(){
-  const rows = document.querySelectorAll('#photoContainer table.photo-table tbody tr');
-  rows.forEach(tr=>{
-    const clave = tr.dataset.clave; if(!clave) return;
-    const badge = tr.querySelector('.badge-state');
-    updatePhotoRowStatus(clave, tr, badge, (bloquesFotosCache.find(b=>b.clave===clave)||{}).fotos);
-  });
+/* Update badge & view button */
+function updatePhotoRowStatus(clave, trElem, badgeElem, fotosNecesarias, btnViewElem){
+  const files = uploadedPhotos[clave]||[]; const n = files.length; const badge = badgeElem; const btnView = btnViewElem || trElem.querySelector('button.ghost');
+  if(n===0){ badge.className='badge-state badge-red'; badge.innerText='Sin subir'; if(btnView) btnView.disabled=true; }
+  else if(fotosNecesarias && n < fotosNecesarias){ badge.className='badge-state badge-yellow'; badge.innerText=`${n}/${fotosNecesarias}`; if(btnView) btnView.disabled=false; }
+  else { badge.className='badge-state badge-green'; badge.innerText = fotosNecesarias? `${n}/${fotosNecesarias}` : `${n}`; if(btnView) btnView.disabled=false; }
 }
 
-/* ---------- Utilidades generales ---------- */
-function resetApp(){
-  if(!confirm('Reiniciar la aplicación (limpiará datos en memoria)?')) return;
-  tanks = []; equipos = []; redes = []; actividades = {}; uploadedPhotos = {}; bloquesFotosCache = [];
-  renderTanksList(); renderEquiposList(); renderRedList();
-  updateEquipoSelects(); updateTankSelectOptions();
-  showStep(1);
+/* Final generation: send payload + files to /generate_docx */
+async function generateWordWithPhotos(e){
+  e && e.preventDefault();
+  document.getElementById('err-step-7').innerText='';
+  try{
+    for(let i=1;i<=6;i++){ if(!validateStep(i)){ showStep(i); throw 'Validation failed'; } }
+    const payload = buildPayload();
+    const form = new FormData(); form.append('payload', JSON.stringify(payload));
+    // append uploadedPhotos using claves; handle multiple using clave__1, clave__2
+    for(const clave in uploadedPhotos){
+      const files = uploadedPhotos[clave];
+      if(Array.isArray(files)){
+        if(files.length>1){
+          for(let i=0;i<files.length;i++){
+            const key = `${clave}__${i+1}`;
+            form.append(key, files[i], files[i].name);
+          }
+        } else {
+          form.append(clave, files[0], files[0].name);
+        }
+      }
+    }
+    const btn = document.getElementById('finalGenerate');
+    btn.disabled=true; btn.innerText='Generando...';
+    const res = await fetch('/generate_docx', { method:'POST', body: form });
+    if(!res.ok){ const txt = await res.text(); throw new Error('Error servidor: '+txt); }
+    const blob = await res.blob(); const filename = (res.headers.get('Content-Disposition') || '').split('filename=')[1] || 'informe_generado.docx';
+    const url = URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=filename.replace(/"/g,''); document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    btn.disabled=false; btn.innerText='Generar Word →'; alert('Informe generado y descargado.');
+  } catch(err){ console.error(err); document.getElementById('err-step-7').innerText = 'Error generando el Word: ' + (err.message||err); const btn=document.getElementById('finalGenerate'); if(btn){ btn.disabled=false; btn.innerText='Generar Word →'; } }
 }
 
-/* ---------- Render inicial ---------- */
-document.addEventListener('DOMContentLoaded', function(){
-  renderTanksList();
-  renderEquiposList();
-  renderRedList();
-  updateEquipoSelects();
-  updateTankSelectOptions();
-  updateTopProgress();
-  if(currentStep === 7 && typeof buildPhotoTable === 'function') buildPhotoTable();
-});
+/* Bind top generate/button */
+document.getElementById('btnGenerate').addEventListener('click', ()=>{ showStep(7); });
+document.getElementById('downloadTemplateBtn').addEventListener('click', ()=>{ alert('La plantilla ahora no se descarga; usa el formulario para generar el informe.'); });
 
-/* ---------- Render placeholder functions (si tu original tiene más, reemplazalas) ---------- */
-function renderRedList(){ renderRedList; } // queda a tu implementación completa
-function renderEquiposList(){ renderEquiposList; } // ya definida arriba
-function saveGeneral(){ /* placeholder: tu lógica de guardado */ }
+/* Reset */
+function resetApp(){ if(!confirm('Reiniciar todos los datos?')) return; generalInfo={}; tanks=[]; accessoriesByTank={}; redes=[]; equipos=[]; actividades={}; uploadedPhotos={}; bloquesFotosCache=[]; document.querySelectorAll('input[type=text], input[type=email], input[type=number], textarea').forEach(i=>i.value=''); document.querySelectorAll('select').forEach(s=>s.value=''); renderTanks(); renderAccList(''); renderRedList(); renderEquiposList(); updateTankSelectOptions(); showStep(1); }
 
-/* ---------- End script ---------- */
+/* Init */
+function init(){ updateProgressUI(); renderTanks(); renderRedList(); renderEquiposList(); updateTankSelectOptions(); document.getElementById('finalGenerate').addEventListener('click', generateWordWithPhotos); }
+init();
 </script>
-
 </body>
 </html>
