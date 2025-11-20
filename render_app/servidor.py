@@ -8,7 +8,8 @@ from docx.shared import Cm, Pt
 from PIL import Image
 import os, io, json, tempfile, traceback
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder="templates")
+CORS(app)
 app.config['MAX_CONTENT_LENGTH'] = 300 * 1024 * 1024  # 300MB
 UPLOAD_TMP = "/tmp/solgas_uploads"
 os.makedirs(UPLOAD_TMP, exist_ok=True)
@@ -413,3 +414,4 @@ def index():
 if __name__ == "__main__":
     # production: use gunicorn/uWSGI; this is dev
     app.run(host="0.0.0.0", port=5000, debug=True)
+
