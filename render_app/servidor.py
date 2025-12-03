@@ -1,22 +1,15 @@
-#!/usr/bin/env python3
-# servidor.py - Backend para Solgas (bloques fotos + generar .docx)
-# Requiere: Flask, python-docx, Pillow, werkzeug
-from flask import Flask, request, jsonify, send_file
-from werkzeug.utils import secure_filename
-from docx import Document
-from docx.shared import Cm, Pt
-from PIL import Image
-import os, io, json, tempfile, traceback
+# ============================================================
+# PY_INICIAL(03.12) - Versión corregida con integración de fotos
+# ============================================================
 import os
 import tempfile
-import json
+import unicodedata
 from datetime import datetime
-from flask import Flask, request, send_file, jsonify, render_template
+from flask import Flask, request, send_file, jsonify
 from flask_cors import CORS
 import pandas as pd
-import unicodedata
 from docx import Document
-from docx.shared import Pt, RGBColor, Inches
+from docx.shared import Pt, RGBColor, Inches, Cm
 from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
 from docx.enum.table import WD_TABLE_ALIGNMENT, WD_ALIGN_VERTICAL
 from docx.oxml import OxmlElement
@@ -24,409 +17,912 @@ from docx.oxml.ns import qn
 
 app = Flask(__name__, template_folder="templates")
 CORS(app)
-app.config['MAX_CONTENT_LENGTH'] = 300 * 1024 * 1024  # 300MB
-UPLOAD_TMP = "/tmp/solgas_uploads"
-os.makedirs(UPLOAD_TMP, exist_ok=True)
 
-def safe_str(x, default='-'):
-    if x is None: return default
-    s = str(x).strip()
-    return s if s else default
 
-# -----------------------
-# Generador de bloques (mismo algoritmo que frontend)
-# Recibe payload (general/tanks/accesorios/equipos/actividades)
-# -----------------------
-def build_default_bloques_from_payload(payload):
-    bloques = []
-    order = 0
-    general = payload.get("general") or payload.get("generalInfo") or {}
-    tanks = payload.get("tanques", []) or payload.get("tanks", [])
-    accesoriosByTank = payload.get("accesoriosTanque", {}) or payload.get("accesoriosByTank", {}) or {}
-    redes = payload.get("accesoriosRed", []) or payload.get("redes", [])
-    equipos = payload.get("equipos", []) or payload.get("equipos", [])
-    actividades = payload.get("actividades", {}) or payload.get("activities", {})
+# =========================
+# normalizar texto
+def normalizar(texto):
+    if texto is None:
+        return ""
+    return (
+        unicodedata.normalize("NFKD", str(texto))
+        .encode("ascii", "ignore")
+        .decode("ascii")
+    )
 
-    def push(titulo, clave, fotos=1, aplica=True):
-        nonlocal order
-        order += 1
-        bloques.append({"titulo": titulo, "clave": clave, "fotos": fotos, "aplica": aplica, "order": order})
 
-    # 8 y 9 básicos
-    push("8. Evidencia fotográfica (del establecimiento) - Panorámica", "foto_8_1", 1, True)
-    push("9.1 FOTO PANORÁMICA DE LA ZONA", "foto_9_panoramica", 1, True)
+def valOrDash(v):
+    return v if (v is not None and str(v).strip() != "") else "-"
 
-    # por tanque (9.x)
-    fixed_titles = [
-      "FOTO DE BASES DE CONCRETO",
-      "FOTO DE MANÓMETROS 0-60 PSI",
-      "FOTO DE MANÓMETROS 0-300 PSI",
-      "FOTO DE CONEXIÓN DE CHICOTE A LA MULTIVÁLVULA",
-      "STICKERS DEL TANQUE Y PINTADO",
-      "FOTO DE LOS 04 ANCLAJES, PERNOS, TORNILLOS",
-      "FOTO DE VÁLVULA DE LLENADO",
-      "FOTO DE VÁLVULA DE SEGURIDAD",
-      "FOTO DE VÁLVULA DE DRENAJE",
-      "FOTO DE VÁLVULA DE MULTIVÁLVULA",
-      "FOTO DE VÁLVULA DE MEDIDOR DE PORCENTAJE"
-    ]
-    for idx, t in enumerate(tanks):
-        i = idx+1
-        serie = safe_str(t.get("serie"))
-        push(f"PLACA DE TANQUE {i} - Serie: {serie}", f"foto_9_placa_tank_{i}", 1, True)
-        push(f"FOTO PANORÁMICA DE ALREDEDORES DE TANQUE {i} - Serie: {serie}", f"foto_9_panoramica_tank_{i}", 4, True)
-        for j, title in enumerate(fixed_titles, start=1):
-            push(f"9.{j} {title} - Tanque {i} - Serie: {serie}", f"foto_9_tank{i}_{j}", 1, True)
 
-    # Equipos: placas y general. Si no hay equipos, se crean placeholders (aplica False)
-    tipos_encontrados = {}
-    for eq in equipos:
-        tipo = eq.get("Tipo de equipo") or eq.get("tipo") or "equipo"
-        tipos_encontrados.setdefault(tipo, []).append(eq)
-    if tipos_encontrados:
-        for tipo, lista in tipos_encontrados.items():
-            for idx, eq in enumerate(lista, start=1):
-                serie = safe_str(eq.get("Serie") or eq.get("serie"))
-                push(f"FOTO DE PLACA DE {tipo.upper()} {idx} - Serie: {serie}", f"foto_9_{tipo}_placa_{idx}", 1, True)
-                push(f"FOTO DE {tipo.upper()} {idx} (general)", f"foto_9_{tipo}_general_{idx}", 1, True)
+# FUNS DOCX (mantenidas y adaptadas)
+def set_cell_style(cell, text, font_size=10, bold=False, align_center=True):
+    cell.text = str(text)
+    for paragraph in cell.paragraphs:
+        for run in paragraph.runs:
+            run.font.name = "Calibri"
+            run.font.size = Pt(font_size)
+            run.bold = bold
+        paragraph.alignment = (
+            WD_PARAGRAPH_ALIGNMENT.CENTER
+            if align_center
+            else WD_PARAGRAPH_ALIGNMENT.LEFT
+        )
+    cell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+
+
+def add_subtitle(doc, text, indent=False):
+    p = doc.add_paragraph()
+    run = p.add_run(text)
+    run.bold = True
+    run.font.size = Pt(11)
+    run.font.name = "Calibri"
+    run.font.color.rgb = RGBColor(0, 0, 0)
+    p.alignment = WD_PARAGRAPH_ALIGNMENT.LEFT
+    p.paragraph_format.space_before = Pt(10)
+    p.paragraph_format.space_after = Pt(6)
+    if indent:
+        p.paragraph_format.left_indent = Inches(0.3)
+
+
+def add_note(doc, note="*NO CUENTA CON DICHO ELEMENTO"):
+    p = doc.add_paragraph()
+    run = p.add_run(note)
+    run.italic = True
+    run.bold = True
+    run.font.size = Pt(10)
+    run.font.color.rgb = RGBColor(255, 0, 0)
+    run.font.name = "Calibri"
+    p.alignment = WD_PARAGRAPH_ALIGNMENT.LEFT
+    p.paragraph_format.space_after = Pt(6)
+
+
+def create_table(doc, rows, cols, font_size=10, indent=False):
+    table = doc.add_table(rows=rows, cols=cols)
+    table.style = "Table Grid"
+    table.alignment = WD_TABLE_ALIGNMENT.CENTER
+    if indent:
+        tbl = table._element  # <w:tbl>
+        tblPr_elems = tbl.xpath("w:tblPr")
+        if tblPr_elems:
+            tblPr = tblPr_elems[0]
+        else:
+            tblPr = OxmlElement("w:tblPr")
+            tbl.append(tblPr)
+        tblInd = OxmlElement("w:tblInd")
+        tblInd.set(qn("w:w"), "300")
+        tblInd.set(qn("w:type"), "dxa")
+        tblPr.append(tblInd)
+    for row in table.rows:
+        for cell in row.cells:
+            set_cell_style(cell, "-", font_size=font_size)
+    return table
+
+
+def insertar_recuadro_foto(doc, ancho_cm=15, alto_cm=10):
+    """
+    Inserta un recuadro de imagen de ancho_cm x alto_cm con borde.
+    """
+    table = doc.add_table(rows=1, cols=1)
+    table.alignment = WD_TABLE_ALIGNMENT.CENTER
+    table.autofit = False
+
+    ancho_in = ancho_cm / 2.54
+    alto_twips = int(alto_cm * 567)  # 1 cm ≈ 567 twips
+
+    cell = table.cell(0, 0)
+    try:
+        cell.width = Cm(ancho_cm)
+    except Exception:
+        pass
+
+    # altura exacta de fila
+    tr = table.rows[0]._tr
+    trPr = tr.get_or_add_trPr()
+    trHeight = OxmlElement("w:trHeight")
+    trHeight.set(qn("w:val"), str(alto_twips))
+    trHeight.set(qn("w:hRule"), "exact")
+    trPr.append(trHeight)
+
+    p = cell.paragraphs[0]
+    run = p.add_run("ESPACIO PARA IMAGEN")
+    run.font.name = "Calibri"
+    run.font.size = Pt(11)
+    run.bold = True
+    p.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+    cell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+
+    # fondo + borde
+    tc = cell._tc
+    tcPr = tc.get_or_add_tcPr()
+
+    shd = OxmlElement("w:shd")
+    shd.set(qn("w:fill"), "FFFFFF")
+    tcPr.append(shd)
+
+    borders = OxmlElement("w:tcBorders")
+    for side in ["top", "left", "bottom", "right"]:
+        border = OxmlElement(f"w:{side}")
+        border.set(qn("w:val"), "single")
+        border.set(qn("w:sz"), "12")
+        border.set(qn("w:space"), "0")
+        border.set(qn("w:color"), "000000")
+        borders.append(border)
+    tcPr.append(borders)
+
+
+def insertar_foto_doc(doc, img_path, ancho_cm=15, alto_cm=10):
+    """
+    Inserta imagen con tamaño exacto ancho_cm x alto_cm (Cm).
+    """
+    try:
+        doc.add_picture(img_path, width=Cm(ancho_cm), height=Cm(alto_cm))
+    except Exception:
+        insertar_recuadro_foto(doc, ancho_cm=ancho_cm, alto_cm=alto_cm)
+
+
+# =========================
+# Convierte payload JSON -> DataFrames
+def build_dfs_from_json(payload):
+    df_info = pd.DataFrame([payload.get("general", {})])
+    df_tanques = pd.DataFrame(payload.get("tanques", []))
+    df_accesorios = pd.DataFrame(payload.get("accesoriosTanque", []))
+    df_red = pd.DataFrame(payload.get("accesoriosRed", []))
+    df_equipos = pd.DataFrame(payload.get("equipos", []))
+    # Observaciones: puede venir como dict de subpuntos
+    obs = payload.get("observaciones", {})
+    # si observaciones viene como lista/df, el comportamiento original ya lo manejaba
+    if isinstance(obs, dict):
+        # convertimos a df estilo [ {Subpunto: '7.1', Observación: '...'}, ... ] si es necesario
+        df_obs = pd.DataFrame([obs])
     else:
-        # placeholder generic (no aplica)
-        push("FOTO DE PLACA DE EQUIPO - Serie: -", "foto_9_equipo_placa_1", 1, False)
-        push("FOTO DE EQUIPO (general)", "foto_9_equipo_general_1", 1, False)
+        df_obs = pd.DataFrame(obs)
+    return df_info, df_tanques, df_accesorios, df_red, df_equipos, df_obs
 
-    # toma desplazada y accesorios
-    for key, title in [
-        ("foto_9_toma_transferencia", "FOTO DEL PUNTO DE TRANSFERENCIA DESPLAZADO"),
-        ("foto_9_toma_caja", "FOTO DE LA CAJA DE LA TOMA DESPLAZADA"),
-        ("foto_9_toma_recorrido", "FOTO DEL RECORRIDO DESDE TOMA DESPLAZADA HASTA TANQUE")
-    ]:
-        push(title, key, 1, True)
 
-    # mapa accesorios en redes
+# =========================
+# Helper: búsqueda tolerante de fotos en fotos_dict
+def normalize_key(s):
+    return str(s).strip().lower().replace(" ", "_").replace("-", "_")
+
+
+def find_photos_for_title(fotos_dict, title, fallback_keys=None):
+    """
+    Dada una 'title' textual (por ejemplo "9.1. FOTO PANORÁMICA DE LA ZONA")
+    intenta encontrar en fotos_dict las imágenes correspondientes.
+    Estrategias:
+      1) Buscar key exacta en fotos_dict
+      2) Normalizar title y buscar keys que contengan la normalized title o viceversa
+      3) Probar con fallback_keys (lista) si se proporcionan (ej: ['tanque_1','tanque_1_panoramica'])
+    Devuelve lista de rutas (posible vacía).
+    """
+    if fotos_dict is None:
+        return []
+
+    # 1) keys exactas
+    if title in fotos_dict:
+        return fotos_dict[title]
+
+    title_norm = normalize_key(title)
+
+    # try fallback keys first
+    if fallback_keys:
+        for k in fallback_keys:
+            if k in fotos_dict:
+                return fotos_dict[k]
+
+    matches = []
+    # 2) key contains title norm OR title norm contains key
+    for k, arr in fotos_dict.items():
+        kn = normalize_key(k)
+        if kn == title_norm or kn in title_norm or title_norm in kn:
+            matches.extend(arr)
+
+    # 3) try numeric tank/equipment heuristics:
+    # if title contains "TANQUE {n}" (case-insensitive) try "tanque_n"
+    import re
+
+    m = re.search(r"tanque\s*([0-9]+)", title, re.IGNORECASE)
+    if m:
+        idx = m.group(1)
+        key_candidate = f"tanque_{idx}"
+        if key_candidate in fotos_dict:
+            matches.extend(fotos_dict[key_candidate])
+
+    # remove duplicates and return
+    unique = []
+    for p in matches:
+        if p not in unique:
+            unique.append(p)
+    return unique
+
+
+# =========================
+# Agrega fotos para subtítulo con matching flexible
+def add_fotos_para_subtitulo_with_match(doc, fotos_dict, subtitle_id_candidates, texto, cantidad_recuadros=1):
+    """
+    subtitle_id_candidates: puede ser una lista de posibles keys (ej: ['tanque_1', 'tanque_1_panoramica'])
+    texto: título que se colocará en el doc
+    """
+    # insertar subtitulo (formato como en original)
+    p = doc.add_paragraph()
+    run = p.add_run(texto)
+    run.bold = True
+    run.font.size = Pt(11)
+    run.font.name = "Calibri"
+    run.font.color.rgb = RGBColor(0, 0, 0)
+    p.alignment = WD_PARAGRAPH_ALIGNMENT.LEFT
+    p.paragraph_format.space_before = Pt(10)
+    p.paragraph_format.space_after = Pt(6)
+    p.paragraph_format.left_indent = Inches(0.3)
+    p.paragraph_format.keep_with_next = True
+
+    # Attempt 1: explicit candidates
+    fotos = []
+    if subtitle_id_candidates:
+        for cand in subtitle_id_candidates:
+            if cand in fotos_dict:
+                fotos.extend(fotos_dict[cand])
+
+    # Attempt 2: try find_photos_for_title using the textual title
+    if not fotos:
+        fotos = find_photos_for_title(fotos_dict, texto, fallback_keys=subtitle_id_candidates)
+
+    # Insert photos or recuadros
+    if fotos:
+        for img in fotos:
+            insertar_foto_doc(doc, img, ancho_cm=15, alto_cm=10)
+    else:
+        for _ in range(cantidad_recuadros):
+            insertar_recuadro_foto(doc, ancho_cm=15, alto_cm=10)
+
+
+# =========================
+# generar_docx_desde_dfs (mantiene original y añade fotos_dict)
+def generar_docx_desde_dfs(
+    df_info, df_tanques, df_accesorios, df_red, df_equipos, df_obs, fotos_dict=None
+):
+    if fotos_dict is None:
+        fotos_dict = {}
+
+    doc = Document()
+
+    # --- Título
+    titulo = doc.add_paragraph()
+    run = titulo.add_run(
+        "INFORME DE MANTENIMIENTO PREVENTIVO Y CUMPLIMIENTO NORMATIVO"
+    )
+    run.bold = True
+    run.underline = True
+    run.font.size = Pt(14)
+    run.font.name = "Calibri"
+    titulo.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+
+    # === 1. Información de cliente
+    add_subtitle(doc, "1. INFORMACIÓN DE CLIENTE")
+    campos = [
+        "Nombre o razón social del cliente",
+        "Fecha de inspección",
+        "Dirección",
+        "RUC o DNI",
+        "Número de instalación",
+        "Distrito",
+        "Departamento",
+        "Coordenadas",
+        "Nombre del contacto",
+        "Número del contacto",
+        "Correo de contacto",
+    ]
+    tabla1 = create_table(doc, len(campos), 2)
+    datos_generales = {}
+    if df_info is not None and not df_info.empty:
+        datos_generales = df_info.iloc[0].to_dict()
+    for i, campo in enumerate(campos):
+        valor = datos_generales.get(campo, None)
+        set_cell_style(tabla1.cell(i, 0), campo, align_center=False)
+        set_cell_style(tabla1.cell(i, 1), valOrDash(valor), align_center=False)
+
+    # === 2. Tipo de instalación
+    add_subtitle(doc, "2. TIPO DE INSTALACION")
+    tabla2 = create_table(doc, 3, 8)
+    tabla2.cell(0, 0).merge(tabla2.cell(0, 1)).text = "DOMESTICO"
+    tabla2.cell(0, 2).merge(tabla2.cell(0, 5)).text = "INDUSTRIAL"
+    tabla2.cell(0, 6).merge(tabla2.cell(0, 7)).text = "CANALIZADO"
+    for cell in tabla2.rows[0].cells:
+        set_cell_style(cell, cell.text, bold=True)
+    subtipos = [
+        "Doméstico",
+        "Comercio",
+        "Industrial",
+        "Agroindustrial",
+        "Minera",
+        "Avícola",
+        "Residencial",
+        "Comercial",
+    ]
+    for i, subtipo in enumerate(subtipos):
+        set_cell_style(tabla2.cell(1, i), subtipo)
+    for i in range(8):
+        set_cell_style(tabla2.cell(2, i), " ")
+
+    # === 3. Tanques inspeccionados
+    add_subtitle(doc, "3. TANQUES INSPECCIONADOS")
+    headers3 = [
+        "Tanque",
+        "Capacidad (gal)",
+        "N° de serie",
+        "Año de fabricación",
+        "Tipo de tanque",
+        "Fabricante de Tanque",
+        "% Actual",
+    ]
+    num_tanques = len(df_tanques) if df_tanques is not None else 0
+    tabla3 = create_table(doc, num_tanques + 1, len(headers3))
+    for j, h in enumerate(headers3):
+        set_cell_style(tabla3.cell(0, j), h, bold=True)
+    for i in range(num_tanques):
+        for j, col in enumerate(headers3):
+            valor = None
+            if df_tanques is not None and col in df_tanques.columns:
+                valor = df_tanques.iloc[i][col]
+            else:
+                if col == "N° de serie" and df_tanques is not None:
+                    if "serie" in df_tanques.columns:
+                        valor = df_tanques.iloc[i].get("serie", None)
+            if j == 0:
+                valor = str(i + 1)
+            set_cell_style(tabla3.cell(i + 1, j), valOrDash(valor))
+
+    # === 4. Accesorios de los tanques
+    add_subtitle(doc, "4. ACCESORIOS DE LOS TANQUES")
+    accesorios = [
+        "Válvula de llenado",
+        "Medidor de porcentaje",
+        "Válvula de seguridad",
+        "Válvula de drenaje",
+        "Multiválvula",
+        "Válvula exceso de flujo (Retorno)",
+        "Válvula exceso de flujo (Bypass)",
+        "Val 3",
+    ]
+    atributos = ["Marca", "Código", "Serie", "Mes/Año de fabricación"]
+    if df_accesorios is None or df_accesorios.empty:
+        df_accesorios = pd.DataFrame(columns=["Tanque", "Atributo"] + accesorios)
+    unique_tanques = (
+        sorted(df_accesorios["Tanque"].unique()) if not df_accesorios.empty else []
+    )
+    nrows = 1 + len(atributos) * len(unique_tanques) if unique_tanques else 2
+    tabla4 = doc.add_table(rows=nrows, cols=2 + len(accesorios))
+    tabla4.style = "Table Grid"
+    tabla4.alignment = WD_TABLE_ALIGNMENT.CENTER
+    set_cell_style(tabla4.cell(0, 0), "N", font_size=7, bold=True)
+    set_cell_style(tabla4.cell(0, 1), "Tanques", font_size=7, bold=True)
+    for i, acc in enumerate(accesorios):
+        set_cell_style(tabla4.cell(0, i + 2), acc, font_size=7, bold=True)
+    row_idx = 1
+    for tanque in unique_tanques:
+        grupo = df_accesorios[df_accesorios["Tanque"] == tanque]
+        for attr in atributos:
+            set_cell_style(tabla4.cell(row_idx, 1), attr, font_size=7)
+            for i, acc in enumerate(accesorios):
+                try:
+                    val = grupo[grupo["Atributo"] == attr][acc].values
+                    if len(val) and pd.notna(val[0]) and str(val[0]).strip() != "":
+                        valor = val[0]
+                    else:
+                        valor = "-"
+                except Exception:
+                    valor = "-"
+                set_cell_style(tabla4.cell(row_idx, i + 2), str(valor), font_size=7)
+            row_idx += 1
+        # merge number column
+        if row_idx - 1 >= row_idx - 4:
+            tabla4.cell(row_idx - 4, 0).merge(tabla4.cell(row_idx - 1, 0))
+            set_cell_style(tabla4.cell(row_idx - 4, 0), str(tanque), font_size=7)
+
+    # === 5. Accesorios en redes ===
+    add_subtitle(doc, "5. ACCESORIOS EN REDES")
+    df_red_local = (
+        df_red.copy()
+        if df_red is not None
+        else pd.DataFrame(
+            columns=["Tipo", "Marca", "Serie", "Código", "Mes/Año de fabricación"]
+        )
+    )
+    if "Tipo" in df_red_local.columns:
+        df_red_local["Tipo"] = df_red_local["Tipo"].astype(str).str.lower().fillna("")
+    else:
+        df_red_local["Tipo"] = ""
+    mapa_accesorios = {
+        "llenado_toma_desplazada": "5.1. Válvula de llenado (toma desplazada)",
+        "retorno_toma_desplazada": "5.2. Válvula de retorno (toma desplazada)",
+        "alivio_hidrostatico": "5.3. Válvula de alivio hidrostático",
+        "regulador_primera_etapa": "5.4. Regulador de primera etapa",
+        "alivio": "5.5. Válvula de alivio",
+        "regulador_2da": "5.6. Regulador de segunda etapa",
+        "pull_away": "5.7. Válvula Pull Away",
+    }
+    grupos = df_red_local.groupby("Tipo") if not df_red_local.empty else {}
+
+    accesorios_red_dict = {}
+    for clave, titulo in mapa_accesorios.items():
+        add_subtitle(doc, titulo, indent=True)
+        lista = (
+            grupos.get_group(clave).to_dict(orient="records")
+            if (hasattr(grupos, "groups") and clave in grupos.groups)
+            else []
+        )
+        filas = max(2, len(lista) + 1)
+        tabla = create_table(doc, filas, 5, indent=True)
+        headers = [
+            "Válvula",
+            "Marca",
+            "Serie",
+            "Código",
+            "Mes/Año de fabricación",
+        ]
+        for j, h in enumerate(headers):
+            set_cell_style(tabla.cell(0, j), h, bold=True)
+        if lista:
+            for idx, acc in enumerate(lista):
+                set_cell_style(tabla.cell(idx + 1, 0), str(idx + 1))
+                set_cell_style(tabla.cell(idx + 1, 1), valOrDash(acc.get("Marca")))
+                set_cell_style(tabla.cell(idx + 1, 2), valOrDash(acc.get("Serie")))
+                set_cell_style(tabla.cell(idx + 1, 3), valOrDash(acc.get("Código")))
+                set_cell_style(
+                    tabla.cell(idx + 1, 4), valOrDash(acc.get("Mes/Año de fabricación"))
+                )
+        else:
+            for j in range(5):
+                set_cell_style(tabla.cell(1, j), "-")
+        accesorios_red_dict[clave] = lista
+
+    # Zona medidores 
+    zona_medidores_bool = False
+    try:
+        zona_medidores_bool = (
+            df_red_local[df_red_local["Tipo"] == "zona_medidores"]["Código"]
+            .astype(str)
+            .str.lower()
+            .str.contains("true")
+            .any()
+        )
+    except Exception:
+        zona_medidores_bool = False
+    accesorios_red_dict["zona_medidores"] = zona_medidores_bool
+
+    # === 6. Equipos de la instalación ===
+    add_subtitle(doc, "6. EQUIPOS DE LA INSTALACIÓN")
+    df_equipos_local = df_equipos.copy() if df_equipos is not None else pd.DataFrame()
+    if "Tipo de equipo" in df_equipos_local.columns:
+        df_equipos_local["Tipo de equipo"] = (
+            df_equipos_local["Tipo de equipo"].astype(str).str.lower().fillna("")
+        )
+    else:
+        df_equipos_local["Tipo de equipo"] = ""
+
+    estructura_equipos = {
+        "vaporizador": ["Equipo", "Marca", "Tipo", "Serie", "Año de fabricación", "Capacidad"],
+        "quemador": ["Equipo", "Marca", "Modelo", "Tipo", "Serie", "Año de fabricación", "Capacidad (kW)"],
+        "decantador": ["Equipo", "Fabricante", "Modelo", "Tipo", "Serie", "Año de fabricación", "Capacidad (gal)"],
+        "dispensador_de_gas": ["Equipo", "Marca", "Modelo", "Serie"],
+        "bomba": ["Equipo", "Marca", "Modelo", "Serie"],
+        "tablero": ["Equipo", "TAG"],
+        "estabilizador": ["Equipo", "Marca", "Modelo", "Serie"],
+        "detector": ["Equipo", "Marca", "Modelo", "Serie"],
+        "extintor": ["Equipo", "Marca", "Serie", "Año de fabricación", "Próxima PH", "Fecha de próxima recarga"],
+    }
+
+    grupos_e = df_equipos_local.groupby("Tipo de equipo") if not df_equipos_local.empty else {}
+
+    for idx, (tipo_equipo, columnas) in enumerate(estructura_equipos.items(), start=1):
+        nombre_limpio = tipo_equipo.replace("_", " ").capitalize()
+        subtitulo = f"6.{idx}. {nombre_limpio}"
+        add_subtitle(doc, subtitulo, indent=True)
+        datos = (
+            grupos_e.get_group(tipo_equipo)
+            if (hasattr(grupos_e, "groups") and tipo_equipo in grupos_e.groups)
+            else pd.DataFrame(columns=columnas)
+        )
+        filas = max(2, len(datos) + 1)
+        tabla = create_table(doc, filas, len(columnas), indent=True)
+        for j, col in enumerate(columnas):
+            set_cell_style(tabla.cell(0, j), col, bold=True)
+        if not datos.empty:
+            for i, (_, fila) in enumerate(datos.iterrows()):
+                for j, col in enumerate(columnas):
+                    valor = fila.get(col, None)
+                    if j == 0:
+                        set_cell_style(tabla.cell(i + 1, j), str(i + 1))
+                    else:
+                        set_cell_style(tabla.cell(i + 1, j), valOrDash(valor))
+        else:
+            for j in range(len(columnas)):
+                set_cell_style(tabla.cell(1, j), "-")
+
+    equipos_instalacion = {
+        k: grupos_e.get_group(k).to_dict(orient="records")
+        if (hasattr(grupos_e, "groups") and k in grupos_e.groups)
+        else []
+        for k in estructura_equipos.keys()
+    }
+
+    # === 7. Observaciones generales ===
+    add_subtitle(doc, "7. OBSERVACIONES GENERALES")
+    df_obs_local = df_obs.copy() if df_obs is not None else pd.DataFrame(columns=["Subpunto", "Observación"])
+    subtitulos_7 = {
+        "7.1": "7.1. Observaciones al cliente",
+        "7.2": "7.2. Observaciones en red de llenado y retorno",
+        "7.3": "7.3. Observaciones en zona de tanque",
+        "7.4": "7.4. Observaciones en red de consumo",
+    }
+    for clave, titulo in subtitulos_7.items():
+        add_subtitle(doc, titulo, indent=True)
+        texto = df_obs_local[df_obs_local["Subpunto"] == clave]["Observación"].values
+        if len(texto) and str(texto[0]).strip() != "":
+            doc.add_paragraph(str(texto[0]).strip())
+        else:
+            doc.add_paragraph("-")
+
+    add_subtitle(doc, "7.5. Observaciones en equipos varios (Vaporizador, Quemador, Decantador, etc)", indent=True)
+    equipos_obs = [
+        "Vaporizador",
+        "Quemador",
+        "Decantador",
+        "Dispensador de gas",
+        "Bomba de abastecimiento",
+        "Tablero eléctrico",
+        "Estabilizador",
+        "Detector de gases",
+        "Extintor",
+    ]
+    tabla_obs = create_table(doc, len(equipos_obs) + 1, 2, indent=True)
+    set_cell_style(tabla_obs.cell(0, 0), "Equipo", bold=True)
+    set_cell_style(tabla_obs.cell(0, 1), "Observación", bold=True)
+    texto_75 = df_obs_local[df_obs_local["Subpunto"] == "7.5"]["Observación"].values
+    observaciones_75 = []
+    if len(texto_75) and str(texto_75[0]).strip():
+        observaciones_75 = [x.strip() for x in str(texto_75[0]).split(".") if x.strip()]
+    for i, equipo in enumerate(equipos_obs):
+        set_cell_style(tabla_obs.cell(i + 1, 0), equipo)
+        set_cell_style(tabla_obs.cell(i + 1, 1), observaciones_75[i] if i < len(observaciones_75) else "-")
+
+    # === 8. Evidencia general ===
+    add_subtitle(doc, "8. EVIDENCIA FOTOGRÁFICA (del establecimiento)")
+    insertar_recuadro_foto(doc)
+
+    # === 9. Evidencia fotográfica de elementos de la instalación ===
+    add_subtitle(doc, "9. Evidencia fotográfica de elementos de la instalación")
+
+    # Preparar bloques para punto 9 (idéntico al original)
+    tanques_for_block = (
+        df_tanques.to_dict(orient="records")
+        if df_tanques is not None and not df_tanques.empty
+        else []
+    )
+    df_equipos_local = df_equipos.copy() if df_equipos is not None else pd.DataFrame()
+    equipos_for_block = (
+        df_equipos_local.to_dict(orient="records")
+        if df_equipos_local is not None and not df_equipos_local.empty
+        else []
+    )
+    accesorios_red_for_block = accesorios_red_dict if 'accesorios_red_dict' in locals() else {}
+
+    bloque_9 = []
+    contador = 1
+
+    # 9.1 Panorámica general
+    bloque_9.append((f"9.{contador}. FOTO PANORÁMICA DE LA ZONA", True, 1)); contador += 1
+
+    # Placas por tanque
+    for i, t in enumerate(tanques_for_block):
+        serie = valOrDash(t.get("N° de serie") or t.get("serie"))
+        bloque_9.append((f"9.{contador}. PLACA DE TANQUE {i+1} DE SERIE: {serie}", True, 1)); contador += 1
+
+    # Panorámica de alrededores por tanque (ejemplo con 4 recuadros)
+    for i, t in enumerate(tanques_for_block):
+        serie = valOrDash(t.get("N° de serie") or t.get("serie"))
+        bloque_9.append((f"9.{contador}. FOTO PANORÁMICA DE ALREDEDORES DE TANQUE {i+1} DE SERIE: {serie}", True, 4)); contador += 1
+
+    # Bloque iterativo según tanques (varios subtítulos por tanque)
+    for i, t in enumerate(tanques_for_block):
+        serie = valOrDash(t.get("N° de serie") or t.get("serie"))
+        bloque_9.append((f"9.{contador}. FOTO DE BASES DE CONCRETO DE TANQUE {i + 1} DE SERIE: {serie}", True, 1)); contador += 1
+        bloque_9.append((f"9.{contador}. FOTO DE MANÓMETROS 0-60 PSI DE TANQUE {i + 1} DE SERIE: {serie}", True, 1)); contador += 1
+        bloque_9.append((f"9.{contador}. FOTO DE MANÓMETROS 0-300 PSI DE TANQUE {i + 1} DE SERIE: {serie}", True, 1)); contador += 1
+        bloque_9.append((f"9.{contador}. FOTO DE CONEXIÓN DE CHICOTE A LA MULTIVÁLVULA DE TANQUE {i + 1} DE SERIE: {serie}", True, 1)); contador += 1
+        bloque_9.append((f"9.{contador}. STICKERS DEL TANQUE {i + 1} DE SERIE: {serie} Y PINTADO", True, 1)); contador += 1
+        bloque_9.append((f"9.{contador}. FOTO DE LOS 04 ANCLAJES, PERNOS, TORNILLOS DEL TANQUE {i + 1} DE SERIE: {serie}", True, 1)); contador += 1
+        bloque_9.append((f"9.{contador}. FOTO DE VÁLVULA DE LLENADO DE TANQUE {i + 1} DE SERIE: {serie}", True, 1)); contador += 1
+        bloque_9.append((f"9.{contador}. FOTO DE VÁLVULA DE SEGURIDAD DE TANQUE {i + 1} DE SERIE: {serie}", True, 1)); contador += 1
+        bloque_9.append((f"9.{contador}. FOTO DE VÁLVULA DE DRENAJE DE TANQUE {i + 1} DE SERIE: {serie}", True, 1)); contador += 1
+        bloque_9.append((f"9.{contador}. FOTO DE VÁLVULA DE MULTIVÁLVULA DE TANQUE {i + 1} DE SERIE: {serie}", True, 1)); contador += 1
+        bloque_9.append((f"9.{contador}. FOTO DE VÁLVULA DE MEDIDOR DE PORCENTAJE DE TANQUE {i + 1} DE SERIE: {serie}", True, 1)); contador += 1
+
+    # Equipos específicos (manteniendo la lista que tenías)
+    for tipo in ["estabilizador", "quemador", "vaporizador", "tablero", "bomba", "dispensador_de_gas", "decantador", "detector"]:
+        lista_eq = equipos_instalacion.get(tipo, [])
+        if lista_eq:
+            for eq in lista_eq:
+                serie = valOrDash(eq.get("Serie"))
+                bloque_9.append((f"9.{contador}. FOTO DE PLACA DE {tipo.upper()} DE SERIE: {serie}", True, 1)); contador += 1
+                bloque_9.append((f"9.{contador}. FOTO DE {tipo.upper()}", True, 1)); contador += 1
+        else:
+            bloque_9.append((f"9.{contador}. FOTO DE PLACA DE {tipo.upper()} DE SERIE: -", False, 1)); contador += 1
+            bloque_9.append((f"9.{contador}. FOTO DE {tipo.upper()}", False, 1)); contador += 1
+
+    # Toma desplazada (llenado_toma_desplazada)
+    tiene_toma = bool(accesorios_red_for_block.get("llenado_toma_desplazada")) if isinstance(accesorios_red_for_block, dict) else False
+    bloque_9.append((f"9.{contador}. FOTO DEL PUNTO DE TRANSFERENCIA DESPLAZADO", tiene_toma, 1)); contador += 1
+    bloque_9.append((f"9.{contador}. FOTO DE LA CAJA DE LA TOMA DESPLAZADA", tiene_toma, 1)); contador += 1
+    bloque_9.append((f"9.{contador}. FOTO DEL RECORRIDO DESDE TOMA DESPLAZADA HASTA TANQUE", tiene_toma, 1)); contador += 1
+
+    # Accesorios individuales (mapa)
     mapa = {
         "llenado_toma_desplazada": "VÁLVULA DE LLENADO TOMA DESPLAZADA",
         "retorno_toma_desplazada": "VÁLVULA DE RETORNO TOMA DESPLAZADA",
+        "alivio_hidrostatico": "VÁLVULA DE ALIVIO HIDROSTÁTICO",
+        "regulador_primera_etapa": "REGULADOR DE PRIMERA ETAPA",
         "alivio": "VÁLVULA DE ALIVIO",
         "regulador_2da": "REGULADOR DE SEGUNDA ETAPA",
         "pull_away": "VÁLVULA PULL AWAY",
-        "alivio_hidrostatico": "VÁLVULA DE ALIVIO HIDROSTÁTICO",
-        "regulador_primera_etapa": "REGULADOR DE PRIMERA ETAPA"
     }
-    for clave_map, readable in mapa.items():
-        lista = [r for r in redes if (r.get("Tipo")==clave_map or r.get("tipo")==clave_map)]
+    for clave, nombre in mapa.items():
+        lista = accesorios_red_for_block.get(clave, []) if (isinstance(accesorios_red_for_block, dict) and clave in accesorios_red_for_block) else []
         cantidad = max(1, len(lista))
         for idx in range(cantidad):
-            codigo = lista[idx].get("Código") if idx < len(lista) else None
-            aplica = len(lista) > 0
-            push(f"FOTO DE {readable} {idx+1} - Código: {safe_str(codigo,'-')}", f"foto_9_acc_{clave_map}_{idx+1}", 1, aplica)
+            if idx < len(lista):
+                codigo = valOrDash(lista[idx].get("Código"))
+                existe = True
+            else:
+                codigo = "-"
+                existe = False
+            bloque_9.append((f"9.{contador}. FOTO DE {nombre} {idx+1} DE CÓDIGO: {codigo}", existe, 1))
+            contador += 1
 
-    push("FOTO DE ZONA MEDIDORES", "foto_9_zona_medidores", 1, True)
-    push("11. EVIDENCIA FOTOGRÁFICA DE LA INSTALACIÓN", "foto_11_1", 1, True)
+    # Zona de medidores
+    bloque_9.append((f"9.{contador}. FOTO DE ZONA MEDIDORES", bool(accesorios_red_for_block.get("zona_medidores")) if isinstance(accesorios_red_for_block, dict) else False, 1)); contador += 1
 
-    # PUNTO 10: Trabajos realizados (dinámicos) - por tanque y redes
-    actividades_obj = actividades or {}
-    # por tanque
-    for idx, t in enumerate(tanks):
-        i = idx+1
-        serie = safe_str(t.get("serie"))
-        # posibles llaves donde el frontend puede mandar actividades: "tank1", "tank_1", "tanque1", "1", etc.
-        actividades_tank = None
-        # check common possibilities
-        for key_candidate in (f"tank{i}", f"tank_{i}", f"tanque{i}", f"tanque_{i}", str(i)):
-            if key_candidate in actividades_obj:
-                actividades_tank = actividades_obj[key_candidate]
-                break
-        # check numeric as list
-        if actividades_tank is None:
-            actividades_tank = actividades_obj.get("tanks", {}).get(str(i)) if isinstance(actividades_obj.get("tanks"), dict) else None
-        # fallback if top-level activities is dict keyed by indexes as strings
-        if actividades_tank is None:
-            actividades_tank = actividades_obj.get(str(i), [])
-        if actividades_tank and isinstance(actividades_tank, list) and len(actividades_tank)>0:
-            for a_idx, act in enumerate(actividades_tank, start=1):
-                desc = safe_str(act.get("descripcion") or act.get("desc") or f"Actividad {a_idx}")
-                push(f"10. Tanque {i} - {desc} - ANTES - Serie: {serie}", f"foto_10_tank{i}_act{a_idx}__antes", 1, True)
-                push(f"10. Tanque {i} - {desc} - DESPUÉS - Serie: {serie}", f"foto_10_tank{i}_act{a_idx}__despues", 1, True)
-        else:
-            push(f"10. Tanque {i} - Trabajos: No se realizaron actividades (o no ameritó)", f"foto_10_tank{i}_no_actividades", 0, True)
-
-    # trabajos en redes (llenado_retorno y consumo)
-    redes_works = [("red_llenado_retorno","Red - Llenado/Retorno"), ("red_consumo","Red - Consumo")]
-    for rw_key, rw_label in redes_works:
-        acts_rw = actividades_obj.get(rw_key) or actividades_obj.get(rw_key.replace("red_","")) or actividades_obj.get(rw_key.replace("red_","")) or []
-        if acts_rw and isinstance(acts_rw, list) and len(acts_rw)>0:
-            for a_idx, act in enumerate(acts_rw, start=1):
-                desc = safe_str(act.get("descripcion") or act.get("desc") or f"Actividad {a_idx}")
-                push(f"10. {rw_label} - {desc} - ANTES", f"foto_10_{rw_key}_act{a_idx}__antes", 1, True)
-                push(f"10. {rw_label} - {desc} - DESPUÉS", f"foto_10_{rw_key}_act{a_idx}__despues", 1, True)
-        else:
-            push(f"10. {rw_label} - No se realizaron actividades", f"foto_10_{rw_key}_no_actividades", 0, True)
-
-    return bloques
-
-@app.route("/bloques_fotos", methods=["POST"])
-def bloques_fotos():
-    try:
-        payload = request.get_json(force=True)
-    except Exception as e:
-        return jsonify({"error":"JSON inválido","detail":str(e)}), 400
-    bloques = build_default_bloques_from_payload(payload)
-    return jsonify(bloques), 200
-
-def save_temp_file(file_storage, prefix="f"):
-    filename = secure_filename(file_storage.filename or "upload")
-    fd, path = tempfile.mkstemp(prefix=prefix + "_", suffix="_"+filename, dir=UPLOAD_TMP)
-    os.close(fd)
-    file_storage.save(path)
-    return path
-
-@app.route("/generate_docx", methods=["POST"])
-def generate_docx():
-    # validate payload
-    if 'payload' not in request.form:
-        return jsonify({"error":"No se recibió campo 'payload' en form-data"}), 400
-    try:
-        payload = json.loads(request.form['payload'])
-    except Exception as e:
-        return jsonify({"error":"Payload JSON inválido","detail":str(e)}), 400
-
-    # Recolectar archivos del request (puede haber claves foto_x / foto_x__1 / foto_10_...)
-    files_map = {}
-    for key in request.files:
-        # getlist para permitir múltiples archivos por la misma clave
-        files_map[key] = request.files.getlist(key)
-
-    # Crear documento
-    doc = Document()
-    # Normalizar font
-    try:
-        style = doc.styles['Normal']
-        font = style.font
-        font.name = 'Arial'
-        font.size = Pt(10)
-    except Exception:
-        pass
-    doc.add_heading('Informe de Inspección - Solgas', level=1)
-
-    # Información general
-    gen = payload.get("general") or payload.get("generalInfo") or {}
-    if gen:
+    # === Subtitulos internos para punto 9 ===
+    def add_foto_con_subtitulo(doc, texto, incluir_imagen=True, num_recuadros=1):
         p = doc.add_paragraph()
-        p.add_run("Información general:\n").bold = True
-        for k, v in gen.items():
-            p.add_run(f"{k}: ").bold = True
-            p.add_run(f"{v}\n")
-
-    # Tanques y accesorios
-    tanques = payload.get("tanques", []) or payload.get("tanks", [])
-    if tanques:
-        doc.add_heading("Tanques", level=2)
-        for idx, t in enumerate(tanques, start=1):
-            doc.add_paragraph(f"Tanque {idx} — Serie: {safe_str(t.get('serie'))} — Tipo: {safe_str(t.get('tipo'))}")
-            acc_map = (payload.get("accesoriosTanque") or payload.get("accesoriosByTank") or {}).get(str(idx), {})
-            if acc_map:
-                tbl = doc.add_table(rows=1, cols=4)
-                hdr = tbl.rows[0].cells
-                hdr[0].text = "Accesorio"; hdr[1].text = "Marca"; hdr[2].text = "Código"; hdr[3].text = "Serie / Mes-Año"
-                for acc_name, fields in acc_map.items():
-                    row = tbl.add_row().cells
-                    row[0].text = acc_name
-                    row[1].text = safe_str(fields.get("Marca"))
-                    row[2].text = safe_str(fields.get("Código"))
-                    row[3].text = f"{safe_str(fields.get('Serie'))} / {safe_str(fields.get('Mes/Año de fabricación'))}"
-            doc.add_paragraph()
-
-    # Accesorios en redes
-    redes = payload.get("accesoriosRed", []) or payload.get("redes", [])
-    if redes:
-        doc.add_heading("Accesorios en redes", level=2)
-        tbl = doc.add_table(rows=1, cols=4)
-        hdr = tbl.rows[0].cells
-        hdr[0].text = "Tipo"; hdr[1].text = "Marca"; hdr[2].text = "Serie"; hdr[3].text = "Código / Mes-Año"
-        for r in redes:
-            row = tbl.add_row().cells
-            row[0].text = safe_str(r.get("Tipo"))
-            row[1].text = safe_str(r.get("Marca"))
-            row[2].text = safe_str(r.get("Serie"))
-            row[3].text = f"{safe_str(r.get('Código'))} / {safe_str(r.get('Mes/Año de fabricación'))}"
-        doc.add_paragraph()
-
-    # Equipos
-    equipos = payload.get("equipos", []) or payload.get("equipos", [])
-    if equipos:
-        doc.add_heading("Equipos", level=2)
-        for eq in equipos:
-            info = ", ".join([f"{k}: {v}" for k, v in eq.items() if v])
-            doc.add_paragraph(info)
-
-    # Observaciones
-    obs = payload.get("observaciones") or payload.get("obs") or {}
-    if obs:
-        doc.add_heading("Observaciones", level=2)
-        for k, v in obs.items():
-            doc.add_paragraph(f"{k}: {safe_str(v, '')}")
-
-    # BLOQUES FOTOGRÁFICOS
-    bloques = build_default_bloques_from_payload(payload)
-    doc.add_page_break()
-    doc.add_heading("Evidencias fotográficas", level=2)
-
-    # Flatten file keys so clave and clave__N both map
-    flattened = {}
-    for key, flist in files_map.items():
-        flattened.setdefault(key, []).extend(flist)
-        # if key contains '__', also map base
-        if "__" in key:
-            base = key.split("__")[0]
-            flattened.setdefault(base, []).extend(flist)
-
-    # helper: insert image into a cell with forced size 15x10 cm.
-    def insert_image_in_cell(cell, file_storage):
-        try:
-            tmp_path = save_temp_file(file_storage, prefix="img")
-            # ensure image mode and size acceptable (Pillow)
-            try:
-                with Image.open(tmp_path) as im:
-                    # convert to RGB if needed
-                    if im.mode in ("RGBA","P"):
-                        bg = Image.new("RGB", im.size, (255,255,255))
-                        bg.paste(im, mask=im.split()[3] if im.mode=="RGBA" else None)
-                        bg.save(tmp_path, format="JPEG")
-                    # optionally can resize preserving aspect to fit within 15x10 cm while keeping aspect
-            except Exception:
-                pass
-            paragraph = cell.paragraphs[0]
-            run = paragraph.add_run()
-            run.add_picture(tmp_path, width=Cm(15), height=Cm(10))
-            try: os.remove(tmp_path)
-            except: pass
-            return True
-        except Exception as e:
-            print("Error insert image:", e)
-            traceback.print_exc()
-            return False
-
-    for block in bloques:
-        titulo = block.get("titulo")
-        clave = block.get("clave")
-        fotos_needed = block.get("fotos", 1)
-        aplica = block.get("aplica", True)
-        doc.add_heading(titulo, level=3)
-        if fotos_needed == 0:
-            doc.add_paragraph("(Sin imágenes solicitadas para este subtítulo).")
-            continue
-        # Gather files for this clave
-        found_files = []
-        # exact key
-        if clave in files_map:
-            found_files = files_map[clave]
+        run = p.add_run(texto)
+        run.bold = True
+        run.font.size = Pt(11)
+        run.font.name = "Calibri"
+        run.font.color.rgb = RGBColor(0, 0, 0)
+        p.alignment = WD_PARAGRAPH_ALIGNMENT.LEFT
+        p.paragraph_format.space_before = Pt(10)
+        p.paragraph_format.space_after = Pt(6)
+        p.paragraph_format.left_indent = Inches(0.3)
+        p.paragraph_format.keep_with_next = True
+        if incluir_imagen:
+            for _ in range(num_recuadros):
+                insertar_recuadro_foto(doc)
         else:
-            # collect keys starting with clave (e.g., clave__1, clave__2, clave_act..., etc)
-            candidates = [k for k in files_map.keys() if k.startswith(clave)]
-            for kc in candidates:
-                found_files.extend(files_map.get(kc, []))
-            # flattened fallback
-            if not found_files and clave in flattened:
-                found_files = flattened[clave]
-        if not found_files:
-            doc.add_paragraph("No se subió fotografía para este subtítulo.")
-            continue
-        # layout: try to place up to fotos_needed per row
-        cols = min(fotos_needed, max(1, len(found_files)))
-        rows = (len(found_files) + cols -1)//cols
-        tbl = doc.add_table(rows=rows, cols=cols)
-        f_idx = 0
-        for r in range(rows):
-            cells = tbl.rows[r].cells
-            for c in range(cols):
-                if f_idx < len(found_files):
-                    insert_image_in_cell(cells[c], found_files[f_idx])
-                else:
-                    cells[c].text = ""
-                f_idx += 1
-        doc.add_paragraph()
+            add_note(doc, "*NO CUENTA CON DICHO ELEMENTO")
 
-    # DETALLE DE ACTIVIDADES (10.X) - mostrar ANTES / DESPUÉS en tabla
-    doc.add_page_break()
-    doc.add_heading("Trabajos realizados (detalle ANTES / DESPUÉS)", level=2)
-    actividades_obj = payload.get("actividades", {}) or payload.get("activities", {})
-    if actividades_obj and isinstance(actividades_obj, dict) and len(actividades_obj)>0:
-        # iterate keys in actividades_obj: can be tank1, tank_1, red_..., or numeric keys
-        for key, acts in actividades_obj.items():
-            # acts is expected to be a list of activities for that key
-            doc.add_heading(f"Actividades — {key}", level=3)
-            if not acts:
-                doc.add_paragraph("No se registraron actividades.")
-                continue
-            for a_idx, act in enumerate(acts, start=1):
-                desc = safe_str(act.get("descripcion") or act.get("desc") or f"Actividad {a_idx}")
-                doc.add_paragraph(f"- {desc}")
-                # expected file keys for before/after as in frontend/backend conventions
-                before_keys = [
-                    f"foto_10_{key}_act{a_idx}__antes",
-                    f"foto_10_{key}_act{a_idx}__1",
-                    f"foto_10_{key}__antes",
-                    f"foto_10_{key}__1",
-                    f"foto_10_{key}_act{a_idx}__1"
-                ]
-                after_keys = [
-                    f"foto_10_{key}_act{a_idx}__despues",
-                    f"foto_10_{key}_act{a_idx}__2",
-                    f"foto_10_{key}__despues",
-                    f"foto_10_{key}__2",
-                    f"foto_10_{key}_act{a_idx}__2"
-                ]
-                before_files = []
-                after_files = []
-                for k in before_keys:
-                    if k in files_map: before_files.extend(files_map[k])
-                for k in after_keys:
-                    if k in files_map: after_files.extend(files_map[k])
-                # As fallback, check flattened base names
-                base_before = f"foto_10_{key}_act{a_idx}"
-                if not before_files:
-                    for k in flattened.get(base_before, []):
-                        before_files.append(k)
-                base_after = f"foto_10_{key}_act{a_idx}"
-                if not after_files:
-                    for k in flattened.get(base_after, []):
-                        after_files.append(k)
-                # Create 1-row table with 2 cols: Antes / Después
-                tbl = doc.add_table(rows=1, cols=2)
-                hdr = tbl.rows[0].cells
-                hdr[0].text = "ANTES"
-                hdr[1].text = "DESPUÉS"
-                row = tbl.add_row().cells
-                # insert first before + first after if exist; else put text
-                if before_files:
-                    insert_image_in_cell(row[0], before_files[0])
+    def insertar_dos_fotos(doc, bloques):
+        # Inserta dos subtítulos seguidos (cada uno con su recuadro)
+        for texto, incluir in bloques:
+            add_foto_con_subtitulo(doc, texto, incluir_imagen=incluir)
+
+    # === Recorrer bloque_9 con lógica extendida, pero reemplazando recuadros por fotos si existen ===
+    i = 0
+    while i < len(bloque_9):
+        item = bloque_9[i]
+
+        # Compatibilidad: item puede tener 2 o 3 valores
+        if len(item) == 2:
+            texto, incluir = item
+            num_recuadros = 1
+        else:
+            texto, incluir, num_recuadros = item
+
+        # Construir posibles keys que el frontend podría haber usado:
+        # Ejemplo: si el texto contiene "TANQUE 3" generamos keys: 'tanque_3', 'tanque_3_placa', etc.
+        # Esto ayuda a emparejar fotos subidas con títulos generados aquí.
+        subtitle_candidates = []
+        # Normalize text to search numbers
+        text_lower = str(texto).lower()
+        import re
+        m = re.search(r"tanque\s*([0-9]+)", text_lower)
+        if m:
+            n = m.group(1)
+            subtitle_candidates.append(f"tanque_{n}")
+            subtitle_candidates.append(f"tanque_{n}_placa")
+            subtitle_candidates.append(f"tanque_{n}_panoramica")
+            subtitle_candidates.append(f"tanque_{n}_base")
+        # equipos: buscar palabra 'placa de <TIPO>' por ejemplo 'PLACa DE QUEMADOR'
+        m2 = re.search(r"placa de\s+([a-z0-9_]+)", text_lower)
+        if m2:
+            tipo_eq = normalize_key(m2.group(1))
+            subtitle_candidates.append(f"equipo_{tipo_eq}")
+            subtitle_candidates.append(f"{tipo_eq}")
+
+        # Adicional: candidate basado en contador 9.X (por si frontend usó numeración)
+        # extra: remove numbering '9.X.' from start and normalize
+        without_number = re.sub(r"^9\.\d+\.\s*", "", texto)
+        subtitle_candidates.append(normalize_key(without_number))
+
+        if incluir:
+            if num_recuadros > 1:
+                # intento de insertar fotos con match, si no hay, inserta num_recuadros recuadros
+                fotos_found = []
+                # check candidates and title
+                for cand in subtitle_candidates:
+                    fotos_found.extend(fotos_dict.get(cand, []))
+                fotos_found = list(dict.fromkeys(fotos_found))
+                if not fotos_found:
+                    fotos_found = find_photos_for_title(fotos_dict, texto, fallback_keys=subtitle_candidates)
+                if fotos_found:
+                    for img in fotos_found:
+                        insertar_foto_doc(doc, img, ancho_cm=15, alto_cm=10)
                 else:
-                    row[0].text = "(No hubo fotografía ANTES)"
-                if after_files:
-                    insert_image_in_cell(row[1], after_files[0])
-                else:
-                    row[1].text = "(No hubo fotografía DESPUÉS)"
+                    for _ in range(num_recuadros):
+                        insertar_recuadro_foto(doc, ancho_cm=15, alto_cm=10)
                 doc.add_paragraph()
-    else:
-        doc.add_paragraph("No se registraron actividades dinámicas en el payload.")
+                i += 1
+                continue
 
-    # finalize doc
-    bio = io.BytesIO()
-    doc.save(bio)
-    bio.seek(0)
-    return send_file(
-        bio,
-        mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        as_attachment=True,
-        download_name='informe_generado.docx'
-    )
+            # Caso normal: intentar agrupar el siguiente si también es 1 recuadro
+            if i + 1 < len(bloque_9):
+                item2 = bloque_9[i + 1]
+                if len(item2) == 2:
+                    texto2, incluir2 = item2
+                    num_recuadros2 = 1
+                else:
+                    texto2, incluir2, num_recuadros2 = item2
 
-@app.route("/", methods=["GET"])
-def index():
-    return jsonify({"ok": True, "note": "Servidor Solgas — endpoints: POST /bloques_fotos , POST /generate_docx"}), 200
+                if incluir2 and num_recuadros == 1 and num_recuadros2 == 1:
+                    # intentar insertar para texto y texto2 en pareja, buscando fotos para cada uno
+                    # primero build candidates for texto2
+                    subtitle_candidates2 = []
+                    m = re.search(r"tanque\s*([0-9]+)", str(texto2).lower())
+                    if m:
+                        n = m.group(1)
+                        subtitle_candidates2.append(f"tanque_{n}")
+                    subtitle_candidates2.append(normalize_key(re.sub(r"^9\.\d+\.\s*", "", texto2)))
+                    # buscar fotos para ambos
+                    fotos1 = []
+                    for cand in subtitle_candidates:
+                        fotos1.extend(fotos_dict.get(cand, []))
+                    fotos1 = list(dict.fromkeys(fotos1))
+                    if not fotos1:
+                        fotos1 = find_photos_for_title(fotos_dict, texto, fallback_keys=subtitle_candidates)
+                    fotos2 = []
+                    for cand in subtitle_candidates2:
+                        fotos2.extend(fotos_dict.get(cand, []))
+                    fotos2 = list(dict.fromkeys(fotos2))
+                    if not fotos2:
+                        fotos2 = find_photos_for_title(fotos_dict, texto2, fallback_keys=subtitle_candidates2)
+
+                    if fotos1 or fotos2:
+                        # insertar conjunto: si una de las dos no tiene fotos, insertar recuadro(s) en su lugar
+                        # insertar fotos1 (si existen) o recuadro
+                        if fotos1:
+                            for img in fotos1:
+                                insertar_foto_doc(doc, img, ancho_cm=15, alto_cm=10)
+                        else:
+                            insertar_recuadro_foto(doc)
+                        # insertar fotos2
+                        if fotos2:
+                            for img in fotos2:
+                                insertar_foto_doc(doc, img, ancho_cm=15, alto_cm=10)
+                        else:
+                            insertar_recuadro_foto(doc)
+                        doc.add_paragraph()
+                        i += 2
+                        continue
+                    else:
+                        # si ninguno tiene fotos, usar el comportamiento original (dos recuadros)
+                        insertar_dos_fotos(doc, [(texto, True), (texto2, True)])
+                        i += 2
+                        doc.add_paragraph()
+                        continue
+
+            # Sino, intentar insertar una foto para este subtitulo
+            fotos_found = []
+            for cand in subtitle_candidates:
+                fotos_found.extend(fotos_dict.get(cand, []))
+            fotos_found = list(dict.fromkeys(fotos_found))
+            if not fotos_found:
+                fotos_found = find_photos_for_title(fotos_dict, texto, fallback_keys=subtitle_candidates)
+            if fotos_found:
+                for img in fotos_found:
+                    insertar_foto_doc(doc, img, ancho_cm=15, alto_cm=10)
+            else:
+                add_foto_con_subtitulo(doc, texto, incluir_imagen=True)
+            doc.add_paragraph()
+            i += 1
+            continue
+
+        # Caso: no incluir imagen → agrupar todos seguidos con nota
+        while i < len(bloque_9) and not bloque_9[i][1]:
+            texto_no = bloque_9[i][0]
+            add_foto_con_subtitulo(doc, texto_no, incluir_imagen=False)
+            i += 1
+
+    # === 10. EVIDENCIA FOTOGRÁFICA (MANTENIMIENTO REALIZADO) ===
+    add_subtitle(doc, "10. EVIDENCIA FOTOGRÁFICA (MANTENIMIENTO REALIZADO)")
+    add_note(doc, "NOTA 1: SE DEBERÁ MENCIONAR LOS TRABAJOS EJECUTADOS POR TANQUE (INCLUIR LAS INSPECCIONES QUE SE REALICEN)")
+    add_note(doc, "NOTA 2: LAS IMÁGENES DEBEN TENER UN TAMAÑO DE 15CM (LARGO) X 10CM (ALTO) MÁXIMO Y SE DEBERÁ VISUALIZAR CLARAMENTE LOS DATOS RELEVANTES (OBSERVACIONES, DESCRIPCIONES DE ESTADO DE ELEMENTOS, TRABAJO REALIZADO, ETC) DE LOS ELEMENTOS EN LOS TRABAJOS REALIZADOS (TANQUES, ACCESORIOS, REDES)")
+
+    i_trab = 1
+    series_tanques = [valOrDash(row.get("N° de serie") or row.get("serie")) for row in tanques_for_block]
+    for idx, serie in enumerate(series_tanques, start=1):
+        add_subtitle(doc, f"10.{i_trab}. TRABAJOS REALIZADOS EN EL TANQUE {idx} DE SERIE: {serie}", indent=True)
+        doc.add_paragraph("(ACTIVIDAD 1: FOTO ANTES Y FOTO DESPUÉS; DESCRIPCIÓN DEL TRABAJO REALIZADO)")
+        insertar_recuadro_foto(doc)
+        insertar_recuadro_foto(doc)
+        doc.add_paragraph("(ACTIVIDAD 2: FOTO ANTES Y FOTO DESPUÉS; DESCRIPCIÓN DEL TRABAJO REALIZADO)")
+        insertar_recuadro_foto(doc)
+        insertar_recuadro_foto(doc)
+        i_trab += 1
+
+    add_subtitle(doc, f"10.{i_trab}. OBSERVACIONES FINALES", indent=True)
+    doc.add_paragraph("...")
+
+    # Guardar archivo temporal y devolver path
+    tmpdir = tempfile.mkdtemp(prefix="informe_")
+    filename = f"Informe_Mantenimiento_{datetime.now().strftime('%Y%m%d_%H%M%S')}.docx"
+    output_path = os.path.join(tmpdir, filename)
+    doc.save(output_path)
+    return output_path
+
+
+# =========================
+# Endpoint /generar (acepta json o multipart con fotos)
+@app.route("/generar", methods=["POST"])
+def generar():
+    try:
+        fotos_dict = {}
+        fotos_tmpdir = None
+
+        if request.content_type and request.content_type.startswith("multipart/form-data"):
+            json_str = request.form.get("json")
+            if not json_str:
+                return jsonify({"error": "Falta campo 'json' en multipart"}), 400
+            # parse JSON (pandas helper o json.loads)
+            try:
+                import json
+                data = json.loads(json_str)
+            except Exception:
+                data = pd.io.json.loads(json_str)
+
+            # archivos enviados (campo 'files' repetido)
+            file_items = request.files.getlist("files")
+            if not file_items:
+                file_items = list(request.files.values())
+
+            if file_items:
+                fotos_tmpdir = tempfile.mkdtemp(prefix="fotos_")
+                for f in file_items:
+                    filename = f.filename or "foto.jpg"
+                    parts = filename.split("__", 2)
+                    subId = parts[0] if len(parts) >= 1 else "otros"
+                    safe_name = os.path.basename(filename)
+                    save_path = os.path.join(fotos_tmpdir, safe_name)
+                    f.save(save_path)
+                    fotos_dict.setdefault(subId, []).append(save_path)
+        else:
+            data = request.get_json()
+            fotos_dict = {}
+
+        # build dfs
+        df_info, df_tanques, df_accesorios, df_red, df_equipos, df_obs = build_dfs_from_json(data)
+
+        # generar docx
+        output_path = generar_docx_desde_dfs(
+            df_info, df_tanques, df_accesorios, df_red, df_equipos, df_obs, fotos_dict=fotos_dict
+        )
+
+        # enviar y (opcional) limpiar temporales después de enviar
+        return send_file(output_path, as_attachment=True, download_name=os.path.basename(output_path))
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
 
 if __name__ == "__main__":
-    # production: use gunicorn/uWSGI; this is dev
-    app.run(host="0.0.0.0", port=5000, debug=True)
-
-
+    app.run(host="0.0.0.0", port=5001, debug=True)
