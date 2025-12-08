@@ -612,7 +612,7 @@ td.accesorio {
         <div class="card-header">
           <div>
             <div class="card-title">7 · Actividades realizadas (Subtítulo 10)</div>
-            <div class="hint">Agrega actividades por tanque, red o equipo. Cada actividad requiere fotos ANTES y DESPUÉS en el siguiente paso.</div>
+            <div class="hint">Agrega actividades por tanque o equipo. Cada actividad requiere fotos ANTES y DESPUÉS en el siguiente paso. (Selecciona tanque o equipo en "Contexto")</div>
           </div>
           <div><span class="hint">Paso 7 / 8</span></div>
         </div>
@@ -620,10 +620,11 @@ td.accesorio {
         <div style="background:var(--light-card-bg); padding:12px; border-radius:10px; margin-bottom:10px; border:1px solid rgba(0,0,0,0.04)">
           <div style="display:flex;gap:8px;align-items:end;flex-wrap:wrap">
             <div style="min-width:240px">
-              <div class="label">Contexto (tanque / red / equipo / general)</div>
+              <div class="label">Contexto (solo Tanque / Equipo)</div>
               <div class="field">
+                <!-- Placeholder only; options are populated dynamically by rebuildTankSelects() -->
                 <select id="actividad_contexto" class="custom-select">
-                  <option value="general">General</option>
+                  <option value="">-- seleccionar --</option>
                 </select>
               </div>
             </div>
@@ -688,8 +689,7 @@ td.accesorio {
             <tbody></tbody>
           </table>
         </div>
-
-        <div style="margin-top:12px;display:flex;gap:8px">
+		<div style="margin-top:12px;display:flex;gap:8px">
           <button class="btn ghost" onclick="showStep(7)">← Anterior</button>
           <div style="flex:1"></div>
           <button class="btn primary" id="finalGenerateWithPhotos">Generar Documento Final →</button>
@@ -979,13 +979,15 @@ function rebuildTankSelects(){
     sel.appendChild(opt);
   });
 
-  // actividad contexto must include tanque_{i} values
+  // actividad contexto must include tanque_{i} values and equipos (NO red_ and NO general)
   const ctx = document.getElementById('actividad_contexto');
-  const existing = Array.from(ctx.options).map(o=>o.value);
-  // remove previous tanque_* values
+  if (!ctx) return;
+  // remove previous tanque_ and equipo_ values
   Array.from(ctx.options).forEach(o=>{
-    if(o.value.startsWith('tanque_')) o.remove();
+    if(o.value.startsWith('tanque_') || o.value.startsWith('equipo_')) o.remove();
   });
+
+  // add tanque options
   state.tanques.forEach((t, idx)=>{
     const opt = document.createElement('option');
     opt.value = `tanque_${idx+1}`;
@@ -993,21 +995,7 @@ function rebuildTankSelects(){
     ctx.appendChild(opt);
   });
 
-  // redes (red_1, red_2...) also must be present (rebuild)
-  Array.from(ctx.options).forEach(o=>{
-    if(o.value.startsWith('red_')) o.remove();
-  });
-  state.accesoriosRed.forEach((r, idx)=>{
-    const opt = document.createElement('option');
-    opt.value = `red_${idx+1}`;
-    opt.textContent = `Red ${idx+1} — ${r.Tipo || ''}`;
-    ctx.appendChild(opt);
-  });
-
   // equipos should be added to context options as equipo_{i}
-  Array.from(ctx.options).forEach(o=>{
-    if(o.value.startsWith('equipo_')) o.remove();
-  });
   state.equipos.forEach((e, idx)=>{
     const opt = document.createElement('option');
     opt.value = `equipo_${idx+1}`;
@@ -1142,6 +1130,10 @@ function addRed(){
   rebuildTankSelects();
   updateStatuses();
 }
+
+/* -------------------------
+   Resto (Parte 2 del JS)
+   ------------------------- */
 function renderRedList(){
   const container = document.getElementById('redList');
   container.innerHTML = '';
@@ -1289,7 +1281,8 @@ function removeEquipo(idx){
    ACTIVIDADES
    ------------------------- */
 function addActividad(){
-  const ctx = document.getElementById('actividad_contexto').value || 'general';
+  const ctx = document.getElementById('actividad_contexto').value || '';
+  if(!ctx){ alert('Selecciona un contexto (tanque o equipo)'); return; }
   const titulo = document.getElementById('actividad_titulo').value.trim();
   const tiempo = document.getElementById('actividad_tiempo').value.trim();
   const estado = document.getElementById('actividad_estado').value;
@@ -1677,4 +1670,3 @@ updateStatuses();
 
 </script>
 </body>
-</html>
