@@ -734,17 +734,18 @@ def generar_docx_desde_dfs(
     add_note(doc, "NOTA 2: LAS IMÁGENES DEBEN TENER UN TAMAÑO DE 15CM (LARGO) X 10CM (ALTO) MÁXIMO Y SE DEBERÁ VISUALIZAR CLARAMENTE LOS DATOS RELEVANTES (OBSERVACIONES, DESCRIPCIONES DE ESTADO DE ELEMENTOS, TRABAJO REALIZADO, ETC) DE LOS ELEMENTOS EN LOS TRABAJOS REALIZADOS (TANQUES, ACCESORIOS, REDES)")
 
     # Agrupar actividades por contexto dinámicamente
-    # contexts: tanque_{i}, red_{i}, equipo_{i}, general
+    # Sólo consideraremos contextos relevantes: 'tanque_{i}' y 'equipo_{i}'
     actividades_por_contexto = {}
     for act in actividades_list:
-        ctx = act.get("contexto") or "general"
-        actividades_por_contexto.setdefault(ctx, []).append(act)
+        ctx = act.get("contexto") or ""
+        # aceptar sólo 'tanque_' o 'equipo_'
+        if isinstance(ctx, str) and (ctx.startswith("tanque_") or ctx.startswith("equipo_")):
+            actividades_por_contexto.setdefault(ctx, []).append(act)
+        # else: ignorar (no incluimos 'general' ni 'red_*' en el punto 10, según instrucciones)
 
     # Numeración 10.x: seguiremos este orden:
     # - por cada tanque existente, si tiene actividades → 10.1, 10.2...
-    # - luego TRABAJOS REALIZADOS EN REDES DE LLENADO Y RETORNO (si hay actividades de tipo red y su red Tipo indica llenado/retorno)
-    # - luego TRABAJOS REALIZADOS EN REDES DE CONSUMO (resto de red activities)
-    # - luego ACTIVIDADES GENERALES (contexto general)
+    # - luego por cada equipo con actividades → continuación de la numeración
     sec_idx = 1
 
     # 1) Tanques
@@ -777,39 +778,23 @@ def generar_docx_desde_dfs(
                 insertar_recuadro_foto(doc)
         sec_idx += 1
 
-    # 2) Redes: separarlas en llenado/retorno vs consumo con base en tipo del accesorio de red
-    # recolectar todas las actividades que tengan contexto 'red_{i}'
-    red_acts = []
-    for k, acts in actividades_por_contexto.items():
-        if str(k).startswith("red_"):
-            red_acts.extend(acts)
-
-    # clasificar cada actividad segun el tipo de la red asociada (si existe en df_red_local)
-    red_llenado = []
-    red_consumo = []
-    for act in red_acts:
-        ctx = act.get("contexto")
-        # Extraer índice
-        m = re.match(r"red_(\d+)", str(ctx or ""))
-        tipo_red_val = ""
-        if m:
-            idx = int(m.group(1)) - 1
-            if 0 <= idx < len(df_red_local):
-                tipo_red_val = str(df_red_local.iloc[idx].get("Tipo","") or "").lower()
-        # heurística: si contiene 'llenado' o 'retorno' o 'toma' => llenado/retorno
-        if any(s in tipo_red_val for s in ["llenado", "retorno", "toma", "llenado_toma"]):
-            red_llenado.append(act)
-        else:
-            red_consumo.append(act)
-
-    # Si existen actividades de red_llenado
-    if red_llenado:
-        add_subtitle(doc, f"10.{sec_idx}. TRABAJOS REALIZADOS EN REDES DE LLENADO Y RETORNO", indent=True)
-        for a in red_llenado:
+    # 2) Equipos (si hay)
+    equipo_keys = sorted([k for k in actividades_por_contexto.keys() if k.startswith("equipo_")], key=lambda x: int(re.sub(r"\D", "", x) or 0))
+    for ek in equipo_keys:
+        acts = actividades_por_contexto.get(ek, [])
+        if not acts:
+            continue
+        # extraer índice
+        m = re.match(r"equipo_(\d+)", ek)
+        num_eq = m.group(1) if m else ek
+        add_subtitle(doc, f"10.{sec_idx}. TRABAJOS REALIZADOS EN EL EQUIPO {num_eq}", indent=True)
+        for a in acts:
             doc.add_paragraph(f"- {a.get('titulo','Actividad')}. Tiempo: {a.get('tiempo','')}. Estado: {a.get('estado','')}")
             aid = a.get("id")
-            imgs_b = find_images_for_any_token(images_list, [f"{aid}_before", f"{aid}__before", aid])
-            imgs_a = find_images_for_any_token(images_list, [f"{aid}_after", f"{aid}__after", aid])
+            before_tokens = [f"{aid}_before", f"{aid}__before", f"{aid}_antes", aid]
+            after_tokens = [f"{aid}_after", f"{aid}__after", f"{aid}_despues", aid]
+            imgs_b = find_images_for_any_token(images_list, before_tokens)
+            imgs_a = find_images_for_any_token(images_list, after_tokens)
             if imgs_b:
                 insert_images_one_per_line(doc, imgs_b, ancho_cm=15, alto_cm=10)
             else:
@@ -820,42 +805,7 @@ def generar_docx_desde_dfs(
                 insertar_recuadro_foto(doc)
         sec_idx += 1
 
-    # Si existen actividades de red_consumo
-    if red_consumo:
-        add_subtitle(doc, f"10.{sec_idx}. TRABAJOS REALIZADOS EN REDES DE CONSUMO", indent=True)
-        for a in red_consumo:
-            doc.add_paragraph(f"- {a.get('titulo','Actividad')}. Tiempo: {a.get('tiempo','')}. Estado: {a.get('estado','')}")
-            aid = a.get("id")
-            imgs_b = find_images_for_any_token(images_list, [f"{aid}_before", f"{aid}__before", aid])
-            imgs_a = find_images_for_any_token(images_list, [f"{aid}_after", f"{aid}__after", aid])
-            if imgs_b:
-                insert_images_one_per_line(doc, imgs_b, ancho_cm=15, alto_cm=10)
-            else:
-                insertar_recuadro_foto(doc)
-            if imgs_a:
-                insert_images_one_per_line(doc, imgs_a, ancho_cm=15, alto_cm=10)
-            else:
-                insertar_recuadro_foto(doc)
-        sec_idx += 1
-
-    # 3) Actividades generales (contexto 'general')
-    general_acts = actividades_por_contexto.get("general", [])
-    if general_acts:
-        add_subtitle(doc, f"10.{sec_idx}. ACTIVIDADES GENERALES", indent=True)
-        for a in general_acts:
-            doc.add_paragraph(f"- {a.get('titulo','Actividad')}. Tiempo: {a.get('tiempo','')}. Estado: {a.get('estado','')}")
-            aid = a.get("id")
-            imgs_b = find_images_for_any_token(images_list, [f"{aid}_before", f"{aid}__before", aid])
-            imgs_a = find_images_for_any_token(images_list, [f"{aid}_after", f"{aid}__after", aid])
-            if imgs_b:
-                insert_images_one_per_line(doc, imgs_b, ancho_cm=15, alto_cm=10)
-            else:
-                insertar_recuadro_foto(doc)
-            if imgs_a:
-                insert_images_one_per_line(doc, imgs_a, ancho_cm=15, alto_cm=10)
-            else:
-                insertar_recuadro_foto(doc)
-        sec_idx += 1
+    # NOTA: No incluimos secciones de 'general' ni las separaciones de redes (llenado/consumo) aquí, por petición.
 
     # === 11,12,13 ===
     add_subtitle(doc, "11. EVIDENCIA FOTOGRÁFICA DE LA INSTALACIÓN")
