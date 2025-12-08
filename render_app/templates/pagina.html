@@ -15,7 +15,7 @@
   --accent:#00d2ff;
   --gold:#f6b73c;
   --card:#071827;
-  --input-bg:#ffffff; /* base for fields in white theme */
+  --input-bg:#ffffff;
   --muted:#9fdcff;
   --label:#2b2b2b;
   --input-text-dark:#041018;
@@ -529,7 +529,7 @@ td.accesorio {
             <div style="min-width:220px">
               <div class="label">Tipo de equipo *</div>
               <div class="field">
-                <select id="eq_tipo" class="custom-select">
+                <select id="eq_tipo" class="custom-select" onchange="onEqTipoChange()">
                   <option value="">-- seleccionar --</option>
                   <option value="vaporizador">Vaporizador</option>
                   <option value="quemador">Quemador</option>
@@ -730,6 +730,9 @@ td.accesorio {
   </div>
 </div>
 
+<!-- Hidden file input used to attach images for tokens -->
+<input type="file" id="hiddenFileInput" style="display:none" accept="image/*" multiple>
+
 <script>
 /* -------------------------
    Allowed emails (client-side)
@@ -737,156 +740,97 @@ td.accesorio {
 const allowedEmails = [
   "alexander.buleje@solgas.com.pe",
   "renzo.delgado@solgas.com.pe",
-	"ingenieriaeye@hotmail.com",
-	"jarmas@inginor.com.pe",
-	"Jaime.valdeiglesias16@totalgassac.com",
-	"area.mantenimiento@gsgasperu.com",
-	"mantenimiento@cmagol.com.pe",
-	"aherrera@gypingenieros.com",
-	"iserrepe@openersac.com",
-	"operacionesglp@northcompany.com.pe",
-	"ingenieria1@semmaq.com",
-	"administracion@citecservices.com"
+  "ingenieriaeye@hotmail.com",
+  "jarmas@inginor.com.pe",
+  "Jaime.valdeiglesias16@totalgassac.com",
+  "area.mantenimiento@gsgasperu.com",
+  "mantenimiento@cmagol.com.pe",
+  "aherrera@gypingenieros.com",
+  "iserrepe@openersac.com",
+  "operacionesglp@northcompany.com.pe",
+  "ingenieria1@semmaq.com",
+  "administracion@citecservices.com"
 ];
 
 /* -------------------------
-   Application state
+   Estado de la app (modelo en memoria)
    ------------------------- */
-let currentStep = 1;
-const TOTAL_STEPS = 8; /* updated to include activities + photos */
-
-let generalInfo = {}; // object for general
-let tanks = []; // array of tank objects: {serie, capacidad, anio, tipo, fabricante, porcentaje}
-let accessoriesByTank = {}; // keys: "1","2",... -> map accessoryName -> {Marca, Código, Serie, "Mes/Año de fabricación"}
-let redes = []; // array of {Tipo, Marca, Serie, Código, "Mes/Año de fabricación"}
-let zona_medidores_val = null; // true/false
-let equipos = []; // array of equipment objects
-
-/* New: activities list (subtitulo 10) */
-let actividades = []; // {id, contexto, titulo, tiempo, estado}
-
-/* Photo management */
-let photoSubtitles = []; // {id, title, required, isActivity}
-let photosBySubtitle = {}; // { subId: [ {file, role, genName, url?} ] }
-
-/* estructura_equipos for dynamic fields */
-const estructuraEquipos = {
-  "vaporizador": ["Equipo", "Marca", "Tipo", "Serie", "Año de fabricación", "Capacidad"],
-  "quemador": ["Equipo", "Marca", "Modelo", "Tipo", "Serie", "Año de fabricación", "Capacidad (kW)"],
-  "decantador": ["Equipo", "Fabricante", "Modelo", "Tipo", "Serie", "Año de fabricación", "Capacidad (gal)"],
-  "dispensador_de_gas": ["Equipo", "Marca", "Modelo", "Serie"],
-  "bomba": ["Equipo", "Marca", "Modelo", "Serie"],
-  "tablero": ["Equipo", "TAG"],
-  "estabilizador": ["Equipo", "Marca", "Modelo", "Serie"],
-  "detector": ["Equipo", "Marca", "Modelo", "Serie"],
-  "extintor": ["Equipo", "Marca", "Serie", "Año de fabricación", "Próxima PH", "Fecha de próxima recarga"]
+let state = {
+  general: {},
+  tanques: [],                 // array of { serie, capacidad, anio, tipo, fabricante, porcentaje }
+  accesoriosTanque: {},       // { "1": { "Válvula de llenado": {Marca, Código, Serie, "Mes/Año de fabricación"}, ... } }
+  accesoriosRed: [],          // array of { Tipo, Marca, Serie, Código, "Mes/Año de fabricación" }
+  equipos: [],                // array of objects consistent con estructura_equipos
+  observaciones: {},          // { "7.1": "...", ... }
+  actividades: [],            // array of { id, contexto, titulo, tiempo, estado }
+  imagesByToken: {},          // { token: [File, File, ...] }  // used only client-side for preview; final upload uses FormData append
 };
 
-const accesoriosFijos = [
-  "Válvula de llenado", "Medidor de porcentaje", "Válvula de seguridad",
-  "Válvula de drenaje", "Multiválvula"
-];
-const accesoriosOpcionales = [
-  "Válvula exceso de flujo (Retorno)",
-  "Válvula exceso de flujo (Bypass)",
-  "Val 3"
-];
+/* Counters */
+let actividadIdCounter = 1;
 
-/* Utility: update sidebar progress/status and top progress bar */
-function updateProgressUI() {
-  document.getElementById('progressLabel').innerText = `${currentStep} / ${TOTAL_STEPS}`;
-  const percent = Math.round(((currentStep-1)/(TOTAL_STEPS-1))*100);
-  document.getElementById('topProgress').style.width = percent + '%';
-  document.getElementById('status-2').innerText = `${tanks.length} tanques`;
-}
-
-/* Navigation */
+/* UTIL: show/hide steps and update progress */
 function showStep(n) {
-  currentStep = n;
-  for (let i=1;i<=TOTAL_STEPS;i++){
-    const stepEl = document.getElementById(`step-${i}`);
-    if(stepEl) stepEl.classList.remove('active');
-    const nav = document.querySelector(`.nav-item[data-step="${i}"]`);
-    if(nav) nav.classList.remove('active');
-  }
-  const target = document.getElementById(`step-${n}`);
-  if(target) target.classList.add('active');
-  const navActive = document.querySelector(`.nav-item[data-step="${n}"]`);
-  if(navActive) navActive.classList.add('active');
-  updateProgressUI();
-  // when entering step 7 or 8, prepare dynamic content
-  if(n === 7) buildActividadContextOptions();
-  if(n === 8) buildPhotoSubtitles();
+  document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+  const el = document.getElementById('step-' + n);
+  if (el) el.classList.add('active');
+  // Update nav active
+  document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+  const nav = document.querySelector(`.nav-item[data-step="${n}"]`);
+  if (nav) nav.classList.add('active');
+  updateProgress(n);
+  if (n === 3) renderAccList();
+  if (n === 2) renderTanks();
+  if (n === 4) renderRedList();
+  if (n === 5) renderEquiposList();
+  if (n === 7) renderActividadesTable();
+  if (n === 8) buildPhotoTable();
 }
 
-function nextStep(){
-  if(!validateStep(currentStep)) return;
-  if(currentStep < TOTAL_STEPS) showStep(currentStep + 1);
-}
-function prevStep(){
-  if(currentStep > 1) showStep(currentStep - 1);
-}
-function navTo(n){
-  // prevent skipping if current step validation fails
-  if(n > currentStep){
-    if(!validateStep(currentStep)) return;
-    for(let i=1;i<n;i++){
-      if(!validateStep(i)) {
-        alert('Complete pasos previos antes de avanzar.');
-        return;
-      }
-    }
-  }
-  showStep(n);
+function navTo(n) { showStep(n); }
+
+function updateProgress(step) {
+  const total = 8;
+  let completed = 0;
+  for (let i=1;i<=step;i++) completed++;
+  document.getElementById('progressLabel').innerText = `${step} / ${total}`;
+  const pct = Math.round((step/total)*100);
+  document.getElementById('topProgress').style.width = pct + '%';
 }
 
 /* -------------------------
-   LOGIN
+   LOGIN (simple client-side check)
    ------------------------- */
 function doLogin(){
-  const email = (document.getElementById('loginEmail').value || '').trim().toLowerCase();
-  const company = (document.getElementById('loginCompany').value || '').trim();
-  const err = document.getElementById('loginErr');
-  if(!email || !company){ err.style.display='block'; err.innerText = 'Correo y Empresa son obligatorios.'; return; }
-  if(!allowedEmails.includes(email)){
-    err.style.display='block'; err.innerText = 'Correo no autorizado.';
-    return;
-  }
-  // success: hide overlay completely and show UI; set sidebar info and progress bar visible
-  document.getElementById('loginOverlay').remove();
+  const email = document.getElementById('loginEmail').value.trim();
+  const company = document.getElementById('loginCompany').value.trim();
+  if(!email || !company){ document.getElementById('loginErr').innerText='Completa ambos campos.'; document.getElementById('loginErr').style.display='block'; return; }
+  if(!allowedEmails.includes(email.toLowerCase())){ document.getElementById('loginErr').innerText='Correo no autorizado.'; document.getElementById('loginErr').style.display='block'; return; }
+  // set minimal UI
   document.getElementById('sidebarCompany').innerText = company;
   document.getElementById('sidebarEmail').innerText = email;
-  document.getElementById('userInitials').innerText = company.split(' ').map(s=>s[0]).slice(0,2).join('').toUpperCase();
-  // ensure top progress is shown (it is fixed). Start at step 1.
-  updateProgressUI();
+  document.getElementById('userInitials').innerText = email.split('@')[0].slice(0,2).toUpperCase();
+  document.getElementById('loginOverlay').style.display = 'none';
 }
+function loginCancel(){ window.close?.(); }
 
-function loginCancel(){
-  // remove app or redirect to a message
-  alert('Salida de la aplicación.');
-  // hide login and UI
-  document.getElementById('loginOverlay').style.display='none';
-  document.body.innerHTML = '<div style="padding:40px;font-family:Arial;">Acceso cancelado.</div>';
+/* -------------------------
+   STEP NAV helpers
+   ------------------------- */
+function nextStep(){
+  const cur = Array.from(document.querySelectorAll('.step')).findIndex(s=>s.classList.contains('active')) + 1;
+  if(cur < 8) showStep(cur+1);
+}
+function prevStep(){
+  const cur = Array.from(document.querySelectorAll('.step')).findIndex(s=>s.classList.contains('active')) + 1;
+  if(cur > 1) showStep(cur-1);
 }
 
 /* -------------------------
-   STEP 1: General
+   GENERAL
    ------------------------- */
-function saveGeneral(showMsg=false){
-  const required = [
-    "g_nombre","g_fecha","g_direccion","g_ruc","g_numinst","g_distrito",
-    "g_departamento","g_coordenadas","g_contacto","g_telefono","g_correo"
-  ];
-  const missing = required.filter(id => {
-    const el = document.getElementById(id);
-    return !el || !String(el.value || '').trim();
-  });
-  if(missing.length){
-    document.getElementById('err-step-1').innerText = 'Faltan campos obligatorios en Información general.';
-    return false;
-  }
-  document.getElementById('err-step-1').innerText = '';
-  generalInfo = {
+function saveGeneral(next){
+  const g = {
     "Nombre o razón social del cliente": document.getElementById('g_nombre').value.trim(),
     "Fecha de inspección": document.getElementById('g_fecha').value,
     "Dirección": document.getElementById('g_direccion').value.trim(),
@@ -897,889 +841,695 @@ function saveGeneral(showMsg=false){
     "Coordenadas": document.getElementById('g_coordenadas').value.trim(),
     "Nombre del contacto": document.getElementById('g_contacto').value.trim(),
     "Número del contacto": document.getElementById('g_telefono').value.trim(),
-    "Correo de contacto": document.getElementById('g_correo').value.trim()
+    "Correo de contacto": document.getElementById('g_correo').value.trim(),
   };
-  if(showMsg) alert('Información general guardada.');
+  const missing = Object.keys(g).filter(k=>!g[k]);
+  if(missing.length){
+    document.getElementById('err-step-1').innerText = "Faltan campos obligatorios: " + missing.join(', ');
+    return false;
+  }
+  state.general = g;
+  document.getElementById('err-step-1').innerText = '';
+  if(next) nextStep();
   return true;
 }
-function validateStep(step){
-  if(step === 1){
-    return saveGeneral(false);
-  }
-  if(step === 2){
-    if(tanks.length === 0){ document.getElementById('err-step-2').innerText = 'Debes agregar al menos un tanque.'; return false; }
-    document.getElementById('err-step-2').innerText = '';
-    return true;
-  }
-  if(step === 3){
-    // ensure for each accessory present for selected tank all fields required are filled
-    for(const [tk, obj] of Object.entries(accessoriesByTank)){
-      for(const [accName, fields] of Object.entries(obj)){
-        const anyFilled = (fields["Marca"]||'').trim() || (fields["Código"]||'').trim() || (fields["Serie"]||'').trim() || (fields["Mes/Año de fabricación"]||'').trim();
-        if(anyFilled){
-          const missing = ["Marca","Código","Serie","Mes/Año de fabricación"].filter(k => !String(fields[k]||'').trim());
-          if(missing.length){
-            document.getElementById('err-step-3').innerText = `En el tanque ${tk} el accesorio "${accName}" no está completo: faltan ${missing.join(', ')}`;
-            return false;
-          }
-        }
-      }
-    }
-    document.getElementById('err-step-3').innerText = '';
-    return true;
-  }
-  if(step === 4){
-    // if zona_medidores entry present ensure radio chosen (handled on add)
-    return true;
-  }
-  if(step === 5){
-    // validate equipos list (if any) have required cols filled
-    for(let i=0;i<equipos.length;i++){
-      const eq = equipos[i];
-      if(eq["Tipo de equipo"]){
-        const cols = estructuraEquipos[eq["Tipo de equipo"]];
-        if(cols){
-          const missing = cols.filter(c => !String(eq[c]||'').trim());
-          if(missing.length){
-            document.getElementById('err-step-5') && (document.getElementById('err-step-5').innerText = `Equipo ${i+1} incompleto: faltan ${missing.join(', ')}`);
-            return false;
-          }
-        }
-      }
-    }
-    document.getElementById('err-step-5') && (document.getElementById('err-step-5').innerText = '');
-    return true;
-  }
-  // default
-  return true;
-}
+
 /* -------------------------
-   STEP 2 functions: Tanks
+   TANQUES
    ------------------------- */
 function clearTankForm(){
-  document.getElementById('tank_serie').value = '';
-  document.getElementById('tank_capacidad').value = '';
-  document.getElementById('tank_anio').value = '';
-  document.getElementById('tank_tipo').value = '';
-  document.getElementById('tank_fabricante').value = '';
-  document.getElementById('tank_porcentaje').value = '';
-  document.getElementById('err-tank').innerText = '';
+  document.getElementById('tank_serie').value='';
+  document.getElementById('tank_capacidad').value='';
+  document.getElementById('tank_anio').value='';
+  document.getElementById('tank_tipo').value='';
+  document.getElementById('tank_fabricante').value='';
+  document.getElementById('tank_porcentaje').value='';
+  document.getElementById('err-tank').innerText='';
 }
+
 function saveTank(){
   const serie = document.getElementById('tank_serie').value.trim();
+  const capacidad = document.getElementById('tank_capacidad').value.trim();
+  const anio = document.getElementById('tank_anio').value;
   const tipo = document.getElementById('tank_tipo').value;
-  if(!serie || !tipo){
-    document.getElementById('err-tank').innerText = 'N° de serie y Tipo son obligatorios.';
-    return;
-  }
-  const tank = {
-    serie,
-    capacidad: document.getElementById('tank_capacidad').value.trim(),
-    anio: document.getElementById('tank_anio').value.trim(),
-    tipo,
-    fabricante: document.getElementById('tank_fabricante').value.trim(),
-    porcentaje: document.getElementById('tank_porcentaje').value.trim()
-  };
-  tanks.push(tank);
-  // initialize accessories object for this tank index (1-based)
-  const idx = String(tanks.length);
-  if(!accessoriesByTank[idx]) {
-    accessoriesByTank[idx] = {};
-    accesoriosFijos.forEach(name => {
-      accessoriesByTank[idx][name] = {"Marca": "","Código": "","Serie": "","Mes/Año de fabricación": ""};
+  const fabricante = document.getElementById('tank_fabricante').value.trim();
+  const porcentaje = document.getElementById('tank_porcentaje').value.trim();
+  if(!serie || !tipo){ document.getElementById('err-tank').innerText='El N° de serie y Tipo son obligatorios'; return; }
+  // push new
+  state.tanques.push({
+    serie, capacidad, anio, tipo, fabricante, porcentaje
+  });
+  // create empty accessories object for this tank index (1-based keys)
+  const key = String(state.tanques.length);
+  if(!state.accesoriosTanque[key]) {
+    // prepare default structure
+    const accesorios = [
+      "Válvula de llenado",
+      "Medidor de porcentaje",
+      "Válvula de seguridad",
+      "Válvula de drenaje",
+      "Multiválvula",
+      "Válvula exceso de flujo (Retorno)",
+      "Válvula exceso de flujo (Bypass)",
+      "Val 3",
+    ];
+    state.accesoriosTanque[key] = {};
+    accesorios.forEach(a=>{
+      state.accesoriosTanque[key][a] = { "Marca":"", "Código":"", "Serie":"", "Mes/Año de fabricación":"" };
     });
   }
-  renderTanks();
   clearTankForm();
-  updateTankSelectOptions();
-  updateProgressUI();
+  renderTanks();
+  updateStatuses();
 }
 
 function renderTanks(){
-  const container = document.getElementById('tanksList');
-  container.innerHTML = '';
-  tanks.forEach((t,i) => {
-    const idx = i+1;
-    const card = document.createElement('div');
-    card.className = 'tank-card';
-    // left info
-    const info = document.createElement('div');
-    info.className = 'tank-info';
-    info.innerHTML = `
-      <div><strong style="color:#fff">#${idx}</strong></div>
-      <div><div class="small">Serie</div><div style="color:#fff">${t.serie || '-'}</div></div>
-      <div><div class="small">Capacidad</div><div style="color:#fff">${t.capacidad || '-'}</div></div>
-      <div><div class="small">Tipo</div><div style="color:#fff">${t.tipo || '-'}</div></div>
-      <div><div class="small">% Actual</div><div style="color:#fff">${t.porcentaje || '-'}</div></div>
-    `;
-    // actions: Edit Accesorios Borrar (in one line)
-    const actions = document.createElement('div');
-    actions.className = 'tank-actions';
-    actions.innerHTML = `
-      <div class="inline-actions">
-        <button class="btn small ghost" style="background:#e9f7ff;color:#041018;border:1px solid rgba(0,0,0,0.04)" onclick="editTank(${i})">Editar</button>
-        <button class="btn small warn" onclick="openAccForTank(${i})">Accesorios</button>
-        <button class="btn small danger" onclick="deleteTank(${i})">Borrar</button>
+  const list = document.getElementById('tanksList');
+  list.innerHTML = '';
+  state.tanques.forEach((t, idx)=>{
+    const n = idx+1;
+    const div = document.createElement('div');
+    div.className = 'tank-card';
+    div.innerHTML = `<div class="tank-info">
+        <div><strong>#${n}</strong></div>
+        <div>Serie: ${t.serie || '-'}</div>
+        <div>Tipo: ${t.tipo || '-'}</div>
+        <div>Cap: ${t.capacidad || '-'}</div>
+        <div>%: ${t.porcentaje || '-'}</div>
       </div>
-    `;
-    card.appendChild(info);
-    card.appendChild(actions);
-    container.appendChild(card);
+      <div class="tank-actions">
+        <button class="btn small ghost" onclick="editTank(${idx})">Editar</button>
+        <button class="btn small" onclick="openAccModal(${n})">Accesorios</button>
+        <button class="btn small danger" onclick="removeTank(${idx})">Eliminar</button>
+      </div>`;
+    list.appendChild(div);
   });
+  // refresh select in step 3 + actividad contexto
+  rebuildTankSelects();
 }
 
-function editTank(index){
-  const t = tanks[index];
-  if(!t) return;
-  document.getElementById('tank_serie').value = t.serie;
-  document.getElementById('tank_capacidad').value = t.capacidad;
-  document.getElementById('tank_anio').value = t.anio;
-  document.getElementById('tank_tipo').value = t.tipo;
-  document.getElementById('tank_fabricante').value = t.fabricante;
-  document.getElementById('tank_porcentaje').value = t.porcentaje;
-  // remove original so user can save updated
-  tanks.splice(index,1);
-  rebuildAccessoriesAfterTankDeletion();
+function editTank(idx){
+  const t = state.tanques[idx];
+  document.getElementById('tank_serie').value = t.serie || '';
+  document.getElementById('tank_capacidad').value = t.capacidad || '';
+  document.getElementById('tank_anio').value = t.anio || '';
+  document.getElementById('tank_tipo').value = t.tipo || '';
+  document.getElementById('tank_fabricante').value = t.fabricante || '';
+  document.getElementById('tank_porcentaje').value = t.porcentaje || '';
+  // remove old, user will re-add as new to simplify (could extend to real edit)
+  state.tanques.splice(idx,1);
   renderTanks();
-  updateTankSelectOptions();
 }
 
-function deleteTank(index){
-  if(!confirm('¿Eliminar este tanque?')) return;
-  tanks.splice(index,1);
-  rebuildAccessoriesAfterTankDeletion();
-  renderTanks();
-  updateTankSelectOptions();
-  updateProgressUI();
-}
-function rebuildAccessoriesAfterTankDeletion(){
-  const newMap = {};
-  tanks.forEach((t, i) => {
-    const key = String(i+1);
-    // Try keep old data by matching series - best-effort
-    newMap[key] = accessoriesByTank[key] || {};
-    accesoriosFijos.forEach(name => {
-      if(!newMap[key][name]) newMap[key][name] = {"Marca": "","Código": "","Serie": "","Mes/Año de fabricación": ""};
-    });
+function removeTank(idx){
+  if(!confirm('Eliminar tanque?')) return;
+  // remove accesorios entry too: keys shift — to keep things consistent we'll rebuild accesoriosTanque keys
+  state.tanques.splice(idx,1);
+  // rebuild accesoriosTanque
+  const newAcc = {};
+  state.tanques.forEach((_, i)=>{
+    const oldKey = String(i+1);
+    // if previous existed for i+1 we reuse; else create blank
+    const prev = state.accesoriosTanque[oldKey] || {};
+    newAcc[String(i+1)] = prev;
   });
-  accessoriesByTank = newMap;
+  state.accesoriosTanque = newAcc;
+  renderTanks();
+  updateStatuses();
 }
 
 function clearTanks(){
   if(!confirm('Limpiar todos los tanques?')) return;
-  tanks = [];
-  accessoriesByTank = {};
+  state.tanques = [];
+  state.accesoriosTanque = {};
   renderTanks();
-  updateTankSelectOptions();
-  updateProgressUI();
-}
-
-/* Update tank select in Accessories step */
-function updateTankSelectOptions(){
-  const sel = document.getElementById('select_tanque');
-  sel.innerHTML = '<option value="">-- seleccionar tanque --</option>';
-  tanks.forEach((t,i) => {
-    const opt = document.createElement('option');
-    opt.value = String(i+1);
-    opt.textContent = `${i+1} · Serie: ${t.serie || '-'}`;
-    sel.appendChild(opt);
-  });
-  document.getElementById('status-2').innerText = `${tanks.length} tanques`;
+  updateStatuses();
 }
 
 /* -------------------------
-   STEP 3: Accessories per tank (modal)
+   ACCESORIOS por TANQUE (modal)
    ------------------------- */
-
-document.getElementById('select_tanque').addEventListener('change', function(){
-  const val = this.value;
-  updateAccArea(val);
-});
-
-function updateAccArea(tankIndex){
-  const titulo = document.getElementById('acc-titulo');
-  if(!tankIndex){
-    titulo.innerText = 'Accesorio del tanque —';
-    document.getElementById('acc-list').innerHTML = '<div class="small">Selecciona un tanque para ver/editar sus accesorios.</div>';
-    return;
-  }
-  const t = tanks[Number(tankIndex)-1];
-  titulo.textContent = `Accesorio del tanque ${tankIndex} de serie : ${t ? t.serie : '-'}`;
-  document.getElementById('acc-titulo').style.background = '#f3f3f3';
-  document.getElementById('acc-titulo').style.color = '#041018';
-
-  if(!accessoriesByTank[tankIndex]){
-    accessoriesByTank[tankIndex] = {};
-    accesoriosFijos.forEach(name => {
-      accessoriesByTank[tankIndex][name] = {"Marca": "","Código": "","Serie": "","Mes/Año de fabricación": ""};
-    });
-  }
-  renderAccList(tankIndex);
-
-  accesoriosOpcionales.forEach((name, i) => {
-    const elId = (i===0?'opt_exceso_retorno': i===1? 'opt_exceso_bypass':'opt_val3');
-    const exists = !!accessoriesByTank[tankIndex][name];
-    document.getElementById(elId).checked = !!exists;
-  });
-}
-
-function renderAccList(tankIndex){
-  const cont = document.getElementById('acc-list');
-  cont.innerHTML = '';
-  const accMap = accessoriesByTank[tankIndex] || {};
-  const table = document.createElement('table');
-  table.style.width = '100%';
-  table.style.borderCollapse = 'collapse';
-  table.innerHTML = `<thead style="background:#f3f3f3;color:#041018"><tr><th style="padding:8px;text-align:left">Accesorio</th><th style="padding:8px">Marca</th><th style="padding:8px">Código</th><th style="padding:8px">Serie</th><th style="padding:8px">Mes/Año</th></tr></thead>`;
-  const tbody = document.createElement('tbody');
-  for(const accName of Object.keys(accMap)){
-    const fields = accMap[accName];
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td style="padding:8px;border-bottom:1px solid #eee">${accName}</td>
-      <td style="padding:8px;border-bottom:1px solid #eee"><input data-acc="${accName}" data-tank="${tankIndex}" data-field="Marca" value="${fields["Marca"]||''}" style="width:100%"></td>
-      <td style="padding:8px;border-bottom:1px solid #eee"><input data-acc="${accName}" data-tank="${tankIndex}" data-field="Código" value="${fields["Código"]||''}" style="width:100%"></td>
-      <td style="padding:8px;border-bottom:1px solid #eee"><input data-acc="${accName}" data-tank="${tankIndex}" data-field="Serie" value="${fields["Serie"]||''}" style="width:100%"></td>
-      <td style="padding:8px;border-bottom:1px solid #eee"><input data-acc="${accName}" data-tank="${tankIndex}" data-field="Mes/Año de fabricación" value="${fields["Mes/Año de fabricación"]||''}" style="width:100%"></td>
-    `;
-    tbody.appendChild(tr);
-  }
-  table.appendChild(tbody);
-  cont.appendChild(table);
-
-  cont.querySelectorAll('input[data-acc]').forEach(inp => {
-    inp.addEventListener('input', function(){
-      const t = this.getAttribute('data-tank');
-      const acc = this.getAttribute('data-acc');
-      const field = this.getAttribute('data-field');
-      if(!accessoriesByTank[t]) accessoriesByTank[t] = {};
-      if(!accessoriesByTank[t][acc]) accessoriesByTank[t][acc] = {"Marca": "","Código": "","Serie": "","Mes/Año de fabricación": ""};
-      accessoriesByTank[t][acc][field] = this.value;
-    });
-  });
-}
-
-/* Optional toggles behavior */
-document.getElementById('opt_exceso_retorno').addEventListener('change', function(){
-  toggleOptionalAccessory(this.checked, "Válvula exceso de flujo (Retorno)");
-});
-document.getElementById('opt_exceso_bypass').addEventListener('change', function(){
-  toggleOptionalAccessory(this.checked, "Válvula exceso de flujo (Bypass)");
-});
-document.getElementById('opt_val3').addEventListener('change', function(){
-  toggleOptionalAccessory(this.checked, "Val 3");
-});
-
-function toggleOptionalAccessory(enabled, name){
+function rebuildTankSelects(){
   const sel = document.getElementById('select_tanque');
-  const tankIndex = sel.value;
-  if(!tankIndex){
-    alert('Seleccione primero un tanque.');
-    if(name.includes('Retorno')) document.getElementById('opt_exceso_retorno').checked = false;
-    if(name.includes('Bypass')) document.getElementById('opt_exceso_bypass').checked = false;
-    if(name.includes('Val 3')) document.getElementById('opt_val3').checked = false;
-    return;
-  }
-  if(!accessoriesByTank[tankIndex]) accessoriesByTank[tankIndex] = {};
-  if(enabled){
-    accessoriesByTank[tankIndex][name] = {"Marca": "","Código": "","Serie": "","Mes/Año de fabricación": ""};
-  } else {
-    delete accessoriesByTank[tankIndex][name];
-  }
-  renderAccList(tankIndex);
-}
+  sel.innerHTML = '<option value="">-- seleccionar tanque --</option>';
+  state.tanques.forEach((t, idx)=>{
+    const opt = document.createElement('option');
+    opt.value = String(idx+1);
+    opt.textContent = `Tanque ${idx+1} — Serie: ${t.serie || '-'}`;
+    sel.appendChild(opt);
+  });
 
-/* Modal open/close */
-function openAccModal(){
-  const sel = document.getElementById('select_tanque');
-  const t = sel.value || '';
-  if(!t){ alert('Seleccione un tanque para editar sus accesorios.'); return; }
-  openModalForTank(t);
+  // actividad contexto must include tanque_{i} values
+  const ctx = document.getElementById('actividad_contexto');
+  const existing = Array.from(ctx.options).map(o=>o.value);
+  // remove previous tanque_* values
+  Array.from(ctx.options).forEach(o=>{
+    if(o.value.startsWith('tanque_')) o.remove();
+  });
+  state.tanques.forEach((t, idx)=>{
+    const opt = document.createElement('option');
+    opt.value = `tanque_${idx+1}`;
+    opt.textContent = `Tanque ${idx+1} — ${t.serie || ''}`;
+    ctx.appendChild(opt);
+  });
+
+  // redes (red_1, red_2...) also must be present (rebuild)
+  Array.from(ctx.options).forEach(o=>{
+    if(o.value.startsWith('red_')) o.remove();
+  });
+  state.accesoriosRed.forEach((r, idx)=>{
+    const opt = document.createElement('option');
+    opt.value = `red_${idx+1}`;
+    opt.textContent = `Red ${idx+1} — ${r.Tipo || ''}`;
+    ctx.appendChild(opt);
+  });
+
+  // equipos should be added to context options as equipo_{i}
+  Array.from(ctx.options).forEach(o=>{
+    if(o.value.startsWith('equipo_')) o.remove();
+  });
+  state.equipos.forEach((e, idx)=>{
+    const opt = document.createElement('option');
+    opt.value = `equipo_${idx+1}`;
+    opt.textContent = `Equipo ${idx+1} — ${e.Equipo || e['Equipo'] || e['TAG'] || e['Tipo de equipo'] || ''}`;
+    ctx.appendChild(opt);
+  });
 }
 
 function openAccModalFromStep3(){
-  const sel = document.getElementById('select_tanque');
-  const t = sel.value || '';
-  if(!t){ alert('Seleccione un tanque para editar sus accesorios.'); return; }
-  openModalForTank(t);
+  const sel = document.getElementById('select_tanque').value;
+  if(!sel){ alert('Selecciona un tanque primero.'); return; }
+  openAccModal(parseInt(sel));
 }
 
-/* called by tank list Accessorios button (index) */
-function openAccForTank(index){
-  // select the tank and open modal
-  const idx = index + 1;
-  const sel = document.getElementById('select_tanque');
-  sel.value = String(idx);
-  updateAccArea(String(idx));
-  openModalForTank(String(idx));
-}
-
-function openModalForTank(tankIndex){
+let currentModalTank = null;
+function openAccModal(tankNum){
+  currentModalTank = tankNum;
   const modal = document.getElementById('modalAcc');
-  const t = tanks[Number(tankIndex)-1];	
   modal.classList.add('active');
-  document.getElementById('modalTitle').innerText = `Editar accesorios de tanque ${tankIndex} de serie : ${t ? t.serie : '-'}`;
-  const tbody = document.querySelector('#modalAccTable tbody');
-  tbody.innerHTML = '';
-  const accMap = accessoriesByTank[tankIndex] || {};
-  const keys = [...Object.keys(accMap)];
-  keys.forEach(name => {
-    const fields = accMap[name];
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td class = "accesorio" style="padding:6px">${name}</td>
-      <td style="padding:6px"><input data-modal-acc="${name}" style="color : var(--accent)" data-modal-field="Marca" value="${fields["Marca"]||''}"></td>
-      <td style="padding:6px"><input data-modal-acc="${name}" style="color : var(--accent)" data-modal-field="Código" value="${fields["Código"]||''}"></td>
-      <td style="padding:6px"><input data-modal-acc="${name}" style="color : var(--accent)" data-modal-field="Serie" value="${fields["Serie"]||''}"></td>
-      <td style="padding:6px"><input data-modal-acc="${name}" style="color : var(--accent)" data-modal-field="Mes/Año de fabricación" value="${fields["Mes/Año de fabricación"]||''}"></td>
-    `;
-    tbody.appendChild(tr);
-  });
+  document.getElementById('modalTitle').innerText = `Accesorios del Tanque ${tankNum}`;
+  populateModalAccTable(tankNum);
 }
 
 function closeAccModal(){
   document.getElementById('modalAcc').classList.remove('active');
+  currentModalTank = null;
+}
+
+function populateModalAccTable(tankNum){
+  const tbody = document.querySelector('#modalAccTable tbody');
+  tbody.innerHTML = '';
+  const key = String(tankNum);
+  const accesorios = state.accesoriosTanque[key] || {};
+  const accNames = Object.keys(accesorios);
+  if(accNames.length === 0){
+    // create defaults if empty
+    const defaults = [
+      "Válvula de llenado",
+      "Medidor de porcentaje",
+      "Válvula de seguridad",
+      "Válvula de drenaje",
+      "Multiválvula",
+      "Válvula exceso de flujo (Retorno)",
+      "Válvula exceso de flujo (Bypass)",
+      "Val 3",
+    ];
+    state.accesoriosTanque[key] = {};
+    defaults.forEach(d=>{
+      state.accesoriosTanque[key][d] = { "Marca":"", "Código":"", "Serie":"", "Mes/Año de fabricación":"" };
+    });
+  }
+  const accList = Object.entries(state.accesoriosTanque[key]);
+  accList.forEach(([accName, fields], idx)=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="accesorio">${accName}</td>
+      <td><input data-acc="${accName}" data-field="Marca" value="${fields['Marca'] || ''}"></td>
+      <td><input data-acc="${accName}" data-field="Código" value="${fields['Código'] || ''}"></td>
+      <td><input data-acc="${accName}" data-field="Serie" value="${fields['Serie'] || ''}"></td>
+      <td><input data-acc="${accName}" data-field="Mes/Año de fabricación" value="${fields['Mes/Año de fabricación'] || ''}"></td>
+    `;
+    tbody.appendChild(tr);
+  });
 }
 
 function saveAccModal(){
-  const sel = document.getElementById('select_tanque');
-  const t = sel.value || '';
-  if(!t) { closeAccModal(); return; }
-  const inputs = document.querySelectorAll('#modalAccTable input[data-modal-acc]');
-  inputs.forEach(inp => {
-    const acc = inp.getAttribute('data-modal-acc');
-    const field = inp.getAttribute('data-modal-field');
-    if(!accessoriesByTank[t]) accessoriesByTank[t] = {};
-    if(!accessoriesByTank[t][acc]) accessoriesByTank[t][acc] = {"Marca": "","Código": "","Serie": "","Mes/Año de fabricación": ""};
-    accessoriesByTank[t][acc][field] = inp.value;
+  if(!currentModalTank) return;
+  const key = String(currentModalTank);
+  const tbody = document.querySelector('#modalAccTable tbody');
+  const inputs = tbody.querySelectorAll('input');
+  inputs.forEach(inp=>{
+    const acc = inp.dataset.acc;
+    const field = inp.dataset.field;
+    const val = inp.value.trim();
+    if(!state.accesoriosTanque[key]) state.accesoriosTanque[key] = {};
+    if(!state.accesoriosTanque[key][acc]) state.accesoriosTanque[key][acc] = {"Marca":"","Código":"","Serie":"","Mes/Año de fabricación":""};
+    state.accesoriosTanque[key][acc][field] = val;
   });
-  renderAccList(t);
   closeAccModal();
+  renderAccList();
+  updateStatuses();
+}
+
+function renderAccList(){
+  const sel = document.getElementById('select_tanque').value;
+  const container = document.getElementById('acc-list');
+  container.innerHTML = '';
+  if(!sel){ container.innerHTML = '<div class="small">Selecciona un tanque para ver sus accesorios.</div>'; return; }
+  const key = String(sel);
+  const accs = state.accesoriosTanque[key] || {};
+  const table = document.createElement('table');
+  table.className = 'acc-table';
+  table.innerHTML = `<thead><tr><th>Accesorio</th><th>Marca</th><th>Código</th><th>Serie</th><th>Mes/Año</th></tr></thead>`;
+  const tbody = document.createElement('tbody');
+  Object.entries(accs).forEach(([name, fields])=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${name}</td><td>${fields['Marca']||'-'}</td><td>${fields['Código']||'-'}</td><td>${fields['Serie']||'-'}</td><td>${fields['Mes/Año de fabricación']||'-'}</td>`;
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+  container.appendChild(table);
 }
 
 /* -------------------------
-   STEP 4: Redes
+   ACCESORIOS EN RED
    ------------------------- */
 function clearRedForm(){
-  document.getElementById('red_tipo').value = '';
-  document.getElementById('red_marca').value = '';
-  document.getElementById('red_serie').value = '';
-  document.getElementById('red_codigo').value = '';
-  document.getElementById('red_mesano').value = '';
-  document.querySelectorAll('input[name="zona_med"]').forEach(r => r.checked = false);
+  document.getElementById('red_tipo').value='';
+  document.getElementById('red_marca').value='';
+  document.getElementById('red_serie').value='';
+  document.getElementById('red_codigo').value='';
+  document.getElementById('red_mesano').value='';
   document.getElementById('zonaMedidoresControls').style.display = 'none';
 }
-
 document.getElementById('red_tipo').addEventListener('change', function(){
-  const v = this.value;
-  if(v === 'zona_medidores'){
-    document.getElementById('zonaMedidoresControls').style.display = 'block';
-  } else {
-    document.getElementById('zonaMedidoresControls').style.display = 'none';
-  }
+  if(this.value === 'zona_medidores'){ document.getElementById('zonaMedidoresControls').style.display = 'block'; } else { document.getElementById('zonaMedidoresControls').style.display = 'none'; }
 });
 
 function addRed(){
   const tipo = document.getElementById('red_tipo').value;
-  if(!tipo){ alert('Selecciona tipo de accesorio'); return; }
-  if(tipo === 'zona_medidores'){
-    const sel = document.querySelector('input[name="zona_med"]:checked');
-    if(!sel){ alert('Selecciona Tiene / No tiene para zona de medidores'); return; }
-    zona_medidores_val = sel.value === 'true';
-    // replace existing zona_medidores entry if exists
-    redes = redes.filter(r => r.Tipo !== 'zona_medidores');
-    redes.push({"Tipo": "zona_medidores", "Marca":"", "Serie":"", "Código": zona_medidores_val ? "True" : "False", "Mes/Año de fabricación": ""});
-    renderRedList();
-    clearRedForm();
-    return;
-  }
+  if(!tipo){ alert('Selecciona un tipo'); return; }
   const obj = {
-    "Tipo": tipo,
-    "Marca": document.getElementById('red_marca').value.trim() || '',
-    "Serie": document.getElementById('red_serie').value.trim() || '',
-    "Código": document.getElementById('red_codigo').value.trim() || '',
-    "Mes/Año de fabricación": document.getElementById('red_mesano').value.trim() || ''
+    Tipo: tipo,
+    Marca: document.getElementById('red_marca').value.trim(),
+    Serie: document.getElementById('red_serie').value.trim(),
+    Código: document.getElementById('red_codigo').value.trim(),
+    "Mes/Año de fabricación": document.getElementById('red_mesano').value.trim()
   };
-  redes.push(obj);
-  renderRedList();
+  state.accesoriosRed.push(obj);
   clearRedForm();
+  renderRedList();
+  rebuildTankSelects();
+  updateStatuses();
+}
+function renderRedList(){
+  const container = document.getElementById('redList');
+  container.innerHTML = '';
+  if(state.accesoriosRed.length === 0) { container.innerHTML = '<div class="small">No hay accesorios en redes añadidos.</div>'; return; }
+  const table = document.createElement('table');
+  table.className = 'acc-table';
+  table.innerHTML = `<thead><tr><th>#</th><th>Tipo</th><th>Marca</th><th>Serie</th><th>Código</th><th>Mes/Año</th><th>Acciones</th></tr></thead>`;
+  const tbody = document.createElement('tbody');
+  state.accesoriosRed.forEach((r, idx)=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${idx+1}</td><td>${r.Tipo}</td><td>${r.Marca||'-'}</td><td>${r.Serie||'-'}</td><td>${r.Código||'-'}</td><td>${r['Mes/Año de fabricación']||'-'}</td>
+      <td><button class="btn small ghost" onclick="editRed(${idx})">Editar</button> <button class="btn small danger" onclick="removeRed(${idx})">Eliminar</button></td>`;
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+  container.appendChild(table);
 }
 
-function renderRedList(){
-  const c = document.getElementById('redList');
-  c.innerHTML = '';
-  if(redes.length === 0){ c.innerHTML = '<div class="small">No hay accesorios en redes agregados.</div>'; return; }
-  redes.forEach((r,i) => {
-    const div = document.createElement('div');
-    div.className = 'tank-card';
-    div.style.display = 'flex'; div.style.justifyContent='space-between';
-    const left = document.createElement('div');
-    left.innerHTML = `<div style="font-weight:700;color:#fff">${i+1}. ${humanReadableTipo(r.Tipo)}</div>
-                      <div style="color:#dff9ff;margin-top:6px">${(r.Marca||'-')} — ${(r.Serie||'-')} — ${(r.Código||'-')}</div>`;
-    const right = document.createElement('div');
-    right.innerHTML = `<div style="display:flex;gap:8px">
-      <button class="btn small ghost" onclick="editRed(${i})">Editar</button>
-      <button class="btn small danger" onclick="deleteRed(${i})">Borrar</button>
-    </div>`;
-    div.appendChild(left); div.appendChild(right);
-    c.appendChild(div);
-  });
-}
-function humanReadableTipo(tipo){
-  const map = {
-    "llenado_toma_desplazada":"Válvula de llenado de toma desplazada",
-    "retorno_toma_desplazada":"Válvula de retorno toma desplazada",
-    "alivio_hidrostatico":"Válvula de alivio hidrostático",
-    "regulador_primera_etapa":"Regulador primera etapa",
-    "alivio":"Válvula de alivio",
-    "regulador_2da":"Regulador segunda etapa",
-    "pull_away":"Válvula Pull Away",
-    "zona_medidores":"Zona de medidores"
-  };
-  return map[tipo] || tipo;
-}
-function editRed(i){
-  const r = redes[i];
-  if(!r) return;
-  document.getElementById('red_tipo').value = r.Tipo;
+function editRed(idx){
+  const r = state.accesoriosRed[idx];
+  document.getElementById('red_tipo').value = r.Tipo || '';
   document.getElementById('red_marca').value = r.Marca || '';
   document.getElementById('red_serie').value = r.Serie || '';
   document.getElementById('red_codigo').value = r.Código || '';
-  document.getElementById('red_mesano').value = r["Mes/Año de fabricación"] || '';
-  redes.splice(i,1);
+  document.getElementById('red_mesano').value = r['Mes/Año de fabricación'] || '';
+  // remove so re-adding will save new values
+  state.accesoriosRed.splice(idx,1);
   renderRedList();
 }
-function deleteRed(i){
-  if(!confirm('Eliminar accesorio en red?')) return;
-  redes.splice(i,1);
+
+function removeRed(idx){
+  if(!confirm('Eliminar accesorio de red?')) return;
+  state.accesoriosRed.splice(idx,1);
   renderRedList();
+  rebuildTankSelects();
+  updateStatuses();
 }
 
 /* -------------------------
-   STEP 5: Equipos
+   EQUIPOS
    ------------------------- */
-document.getElementById('eq_tipo').addEventListener('change', function(){
-  const tipo = this.value;
-  const nameInput = document.getElementById('eq_name');
-  // compute next index for tipo (start from 1)
-  const countForType = equipos.filter(e => e["Tipo de equipo"] === tipo).length;
-  const nextIdx = countForType + 1;
-  if(tipo) {
-    const pretty = tipo.replace(/_/g,' ');
-    const capital = pretty.charAt(0).toUpperCase() + pretty.slice(1);
-    nameInput.value = `${capital}${nextIdx}`;
-  } else {
-    nameInput.value = '';
-  }
-  renderDynamicFields(tipo);
-});
+const equiposStructure = {
+  "vaporizador": ["Equipo","Marca","Tipo","Serie","Año de fabricación","Capacidad"],
+  "quemador": ["Equipo","Marca","Modelo","Tipo","Serie","Año de fabricación","Capacidad (kW)"],
+  "decantador": ["Equipo","Fabricante","Modelo","Tipo","Serie","Año de fabricación","Capacidad (gal)"],
+  "dispensador_de_gas": ["Equipo","Marca","Modelo","Serie"],
+  "bomba": ["Equipo","Marca","Modelo","Serie"],
+  "tablero": ["Equipo","TAG"],
+  "estabilizador": ["Equipo","Marca","Modelo","Serie"],
+  "detector": ["Equipo","Marca","Modelo","Serie"],
+  "extintor": ["Equipo","Marca","Serie","Año de fabricación","Próxima PH","Fecha de próxima recarga"]
+};
 
-function renderDynamicFields(tipo){
-  const container = document.getElementById('dynamicFields');
-  container.innerHTML = '';
-  if(!tipo) return;
-  const cols = estructuraEquipos[tipo] || [];
-  cols.forEach(col => {
-    if(col === 'Equipo') return; // auto generated
-    const wrap = document.createElement('div');
-    wrap.style.minWidth = '160px';
-    const safeId = 'dyn_' + col.replace(/\s/g,'_').replace(/[()]/g,'');
-    wrap.innerHTML = `<div class="label" style="font-size:12px">${col}</div><div class="field"><input id="${safeId}" type="text"></div>`;
-    container.appendChild(wrap);
+function onEqTipoChange(){
+  const tipo = document.getElementById('eq_tipo').value;
+  const dynamic = document.getElementById('dynamicFields');
+  dynamic.innerHTML = '';
+  if(!tipo) { document.getElementById('eq_name').value = ''; return; }
+  // generate default Equipo name like Vaporizador1 (count existing)
+  const count = state.equipos.filter(e=> (e['Tipo de equipo']||'') === tipo).length + 1;
+  const generatedName = tipo.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase()) + ' ' + count;
+  document.getElementById('eq_name').value = generatedName;
+  const cols = equiposStructure[tipo] || ["Equipo"];
+  cols.slice(1).forEach(col=>{
+    const wrapper = document.createElement('div');
+    wrapper.style.minWidth = '160px';
+    wrapper.innerHTML = `<div class="label" style="margin-bottom:4px">${col}</div><div class="field"><input data-col="${col}" class="eq-dyn" type="text"></div>`;
+    dynamic.appendChild(wrapper);
   });
+}
+
+function clearEquipoForm(){
+  document.getElementById('eq_tipo').value='';
+  document.getElementById('eq_name').value='';
+  document.getElementById('dynamicFields').innerHTML='';
 }
 
 function addEquipo(){
   const tipo = document.getElementById('eq_tipo').value;
   if(!tipo){ alert('Selecciona tipo de equipo'); return; }
-  const cols = estructuraEquipos[tipo];
-  if(!cols){ alert('Tipo de equipo inválido'); return; }
-  const eq = {"Tipo de equipo": tipo};
-  const nombre = document.getElementById('eq_name').value || '';
-  eq["Equipo"] = nombre;
-  cols.forEach(col => {
-    if(col === 'Equipo') return;
-    const id = 'dyn_' + col.replace(/\s/g,'_').replace(/[()]/g,'');
-    const el = document.getElementById(id);
-    eq[col] = el ? el.value.trim() : '';
+  const cols = equiposStructure[tipo] || ["Equipo"];
+  const obj = {};
+  const equipoNombre = document.getElementById('eq_name').value || '';
+  obj['Tipo de equipo'] = tipo;
+  // first column Equipo set to generated or input
+  obj[cols[0]] = equipoNombre;
+  // dynamic inputs
+  const inputs = document.querySelectorAll('.eq-dyn');
+  inputs.forEach(inp=>{
+    const col = inp.dataset.col;
+    obj[col] = inp.value.trim();
   });
-  const missing = cols.filter(c => !String(eq[c]||'').trim());
-  if(missing.length){
-    alert(`Faltan campos en equipo: ${missing.join(', ')}`);
-    return;
-  }
-  equipos.push(eq);
-  document.getElementById('eq_tipo').value = '';
-  document.getElementById('eq_name').value = '';
-  document.getElementById('dynamicFields').innerHTML = '';
+  state.equipos.push(obj);
+  clearEquipoForm();
   renderEquiposList();
+  rebuildTankSelects();
+  updateStatuses();
 }
 
 function renderEquiposList(){
   const c = document.getElementById('equiposList');
   c.innerHTML = '';
-  if(equipos.length === 0){
-    c.innerHTML = '<div class="small">No hay equipos agregados.</div>';
-    return;
-  }
-
-  // Build a table similar to other lists
+  if(state.equipos.length === 0){ c.innerHTML = '<div class="small">No hay equipos añadidos.</div>'; return; }
   const table = document.createElement('table');
-  table.style.width = '100%';
-  const thead = document.createElement('thead');
-  thead.innerHTML = '<tr><th>#</th><th>Equipo</th><th>Tipo</th><th>Detalles</th><th>Acciones</th></tr>';
-  table.appendChild(thead);
-
+  table.className = 'acc-table';
+  const cols = new Set();
+  state.equipos.forEach(e=>Object.keys(e).forEach(k=>cols.add(k)));
+  const headerCols = Array.from(cols);
+  table.innerHTML = `<thead><tr>${headerCols.map(h=>`<th>${h}</th>`).join('')}<th>Acciones</th></tr></thead>`;
   const tbody = document.createElement('tbody');
-  equipos.forEach((eq, i) => {
+  state.equipos.forEach((e, idx)=>{
     const tr = document.createElement('tr');
-    const details = Object.keys(eq).filter(k => !["Equipo","Tipo de equipo"].includes(k)).map(k => `${k}: ${eq[k] || '-'}`).join(' • ');
-    tr.innerHTML = `<td style="padding:8px">${i+1}</td>
-      <td style="padding:8px">${eq["Equipo"] || '-'}</td>
-      <td style="padding:8px">${eq["Tipo de equipo"] || '-'}</td>
-      <td style="padding:8px">${details}</td>
-      <td style="padding:8px"><button class="btn small ghost" onclick="editEquipo(${i})">Editar</button> <button class="btn small danger" onclick="deleteEquipo(${i})">Borrar</button></td>`;
+    tr.innerHTML = `${headerCols.map(h=>`<td>${e[h]||'-'}</td>`).join('')}<td><button class="btn small ghost" onclick="editEquipo(${idx})">Editar</button> <button class="btn small danger" onclick="removeEquipo(${idx})">Eliminar</button></td>`;
     tbody.appendChild(tr);
   });
   table.appendChild(tbody);
   c.appendChild(table);
 }
 
-function editEquipo(i){
-  const eq = equipos[i];
-  if(!eq) return;
-  document.getElementById('eq_tipo').value = eq["Tipo de equipo"];
-  document.getElementById('eq_name').value = eq["Equipo"];
-  renderDynamicFields(eq["Tipo de equipo"]);
-  const cols = estructuraEquipos[eq["Tipo de equipo"]];
-  cols.forEach(col => {
-    if(col === 'Equipo') return;
-    const id = 'dyn_' + col.replace(/\s/g,'_').replace(/[()]/g,'');
-    const el = document.getElementById(id);
-    if(el) el.value = eq[col] || '';
+function editEquipo(idx){
+  const e = state.equipos[idx];
+  // simple edit approach: fill form with data, delete old
+  document.getElementById('eq_tipo').value = e['Tipo de equipo'] || '';
+  onEqTipoChange();
+  document.getElementById('eq_name').value = e['Equipo'] || '';
+  // fill dynamic inputs
+  const inputs = document.querySelectorAll('.eq-dyn');
+  inputs.forEach(inp=>{
+    const col = inp.dataset.col;
+    if(e[col]) inp.value = e[col];
   });
-  equipos.splice(i,1);
+  state.equipos.splice(idx,1);
   renderEquiposList();
 }
-function deleteEquipo(i){
+
+function removeEquipo(idx){
   if(!confirm('Eliminar equipo?')) return;
-  equipos.splice(i,1);
+  state.equipos.splice(idx,1);
   renderEquiposList();
+  rebuildTankSelects();
+  updateStatuses();
 }
 
 /* -------------------------
-   Activities (Paso 7) - add / remove only
+   ACTIVIDADES
    ------------------------- */
-function buildActividadContextOptions(){
-  const sel = document.getElementById('actividad_contexto');
-  sel.innerHTML = '<option value="general">General</option>';
-  tanks.forEach((t,i) => {
-    const o = document.createElement('option');
-    o.value = `tanque_${i+1}`;
-    o.text = `Tanque ${i+1} · Serie: ${t.serie || '-'}`;
-    sel.appendChild(o);
-  });
-  redes.forEach((r,i) => {
-    const o = document.createElement('option');
-    o.value = `red_${i+1}`;
-    o.text = `Red ${i+1} · ${humanReadableTipo(r.Tipo)}`;
-    sel.appendChild(o);
-  });
-  equipos.forEach((eq,i) => {
-    const o = document.createElement('option');
-    o.value = `equipo_${i+1}`;
-    o.text = `Equipo ${i+1} · ${eq["Equipo"] || eq["Tipo de equipo"] || '-'}`;
-    sel.appendChild(o);
-  });
-}
-
-function uid(prefix){ return prefix + '_' + Date.now().toString(36) + '_' + Math.floor(Math.random()*1000); }
-
 function addActividad(){
-  const contexto = document.getElementById('actividad_contexto').value || 'general';
-  const titulo = document.getElementById('actividad_titulo').value || 'Actividad';
-  const tiempo = document.getElementById('actividad_tiempo').value || '';
-  const estado = document.getElementById('actividad_estado').value || 'realizado';
-  const id = uid('actividad');
-  actividades.push({id, contexto, titulo, tiempo, estado});
-  renderActividades();
-  // clear some inputs
-  document.getElementById('actividad_titulo').value = '';
-  document.getElementById('actividad_tiempo').value = '';
+  const ctx = document.getElementById('actividad_contexto').value || 'general';
+  const titulo = document.getElementById('actividad_titulo').value.trim();
+  const tiempo = document.getElementById('actividad_tiempo').value.trim();
+  const estado = document.getElementById('actividad_estado').value;
+  if(!titulo){ alert('Ingresa título de actividad'); return; }
+  const id = actividadIdCounter++;
+  state.actividades.push({ id: String(id), contexto: ctx, titulo, tiempo, estado });
+  // clear inputs
+  document.getElementById('actividad_titulo').value='';
+  document.getElementById('actividad_tiempo').value='';
+  renderActividadesTable();
+  buildPhotoTable(); // reflect activities in photo table
 }
 
-function removeActividad(index){
-  if(!confirm('Eliminar actividad?')) return;
-  actividades.splice(index,1);
-  renderActividades();
-}
-
-function renderActividades(){
-  const tbody = document.getElementById('actividades_table_body');
-  tbody.innerHTML = '';
-  actividades.forEach((a,i) => {
+function renderActividadesTable(){
+  const body = document.getElementById('actividades_table_body');
+  body.innerHTML = '';
+  state.actividades.forEach((a, idx)=>{
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td style="padding:8px">${i+1}</td>
-      <td style="padding:8px">${contextLabel(a.contexto)}</td>
-      <td style="padding:8px">${a.titulo}</td>
-      <td style="padding:8px">${a.tiempo}</td>
-      <td style="padding:8px">${a.estado}</td>
-      <td style="padding:8px"><button class="btn small ghost" onclick="removeActividad(${i})">Eliminar</button></td>`;
-    tbody.appendChild(tr);
+    tr.innerHTML = `<td>${idx+1}</td><td>${a.contexto}</td><td>${a.titulo}</td><td>${a.tiempo||'-'}</td><td>${a.estado}</td>
+      <td><button class="btn small ghost" onclick="editActividad('${a.id}')">Editar</button> <button class="btn small danger" onclick="removeActividad('${a.id}')">Eliminar</button></td>`;
+    body.appendChild(tr);
   });
 }
 
-function contextLabel(ctx){
-  if(ctx === 'general') return 'General';
-  if(ctx.startsWith('tanque_')){
-    const idx = Number(ctx.split('_')[1]) - 1;
-    const t = tanks[idx];
-    return `Tanque ${idx+1} · ${t ? t.serie : '-'}`;
-  }
-  if(ctx.startsWith('red_')){
-    const idx = Number(ctx.split('_')[1]) - 1;
-    const r = redes[idx];
-    return `Red ${idx+1} · ${r ? humanReadableTipo(r.Tipo) : '-'}`;
-  }
-  if(ctx.startsWith('equipo_')){
-    const idx = Number(ctx.split('_')[1]) - 1;
-    const e = equipos[idx];
-    return `Equipo ${idx+1} · ${e ? e.Equipo : '-'}`;
-  }
-  return ctx;
+function editActividad(id){
+  const idx = state.actividades.findIndex(x=>x.id===id);
+  if(idx<0) return;
+  const a = state.actividades[idx];
+  document.getElementById('actividad_titulo').value = a.titulo;
+  document.getElementById('actividad_tiempo').value = a.tiempo;
+  document.getElementById('actividad_estado').value = a.estado;
+  document.getElementById('actividad_contexto').value = a.contexto;
+  // remove old entry (user will re-add)
+  state.actividades.splice(idx,1);
+  renderActividadesTable();
+}
+
+function removeActividad(id){
+  if(!confirm('Eliminar actividad?')) return;
+  state.actividades = state.actividades.filter(a=>a.id !== id);
+  renderActividadesTable();
+  buildPhotoTable();
 }
 
 function onActividadesNext(){
-  // build photo subtitles and go to step 8
-  buildPhotoSubtitles();
+  // when going to photo step, ensure activities contexts exist in select
+  rebuildTankSelects();
   showStep(8);
 }
 
 /* -------------------------
-   PHOTO MANAGEMENT (Paso 8)
+   PHOTO UPLOAD / TOKENS / TABLE
    ------------------------- */
 
-/**
- * buildPhotoSubtitles:
- * - includes: Subtítulo 8 (foto establecimiento)
- * - includes standard point 9 subtitles (basic set) using tanks/equipos data
- * - includes actividades list (each activity becomes a subtitle requiring 2 photos)
- */
-function buildPhotoSubtitles(){
-  photoSubtitles = [];
-  photosBySubtitle = {};
+/*
+ Photo table contains rows for:
+  - Punto 8 (establecimiento)
+  - Bloque 9: generated tokens for each expected subtitulo (we'll mirror backend token strategy simply)
+  - Activities (each activity requires two files: {id}_before and {id}_after)
+  - Punto 11
+ We'll create a manageable list of lines: each line has: label, tokens(array of candidate tokens), requiredCount (number of images expected), note
+*/
 
-  // Subtítulo 8: foto establecimiento
-  photoSubtitles.push({id: 'sub_8_establecimiento', title: '8 · FOTO DEL ESTABLECIMIENTO', required: 1, isActivity:false});
-
-  // Punto 9: some standard subtitles (keep names similar to original expectation)
-  photoSubtitles.push({id: '9_panoramica_general', title: '9.1 · FOTO PANORÁMICA GENERAL', required:1, isActivity:false});
-  photoSubtitles.push({id: '9_equipo_panel', title: '9.2 · FOTO PLACA Y PANEL (EQUIPOS)', required:1, isActivity:false});
-  // add per-tank subtitles (e.g., placa del tanque, panorámica alrededor)
-  tanks.forEach((t, idx) => {
-    const base = `tanque_${idx+1}`;
-    photoSubtitles.push({id: `${base}_placa`, title: `9.${10+idx*2} · PLACA DE TANQUE ${idx+1} — SERIE: ${t.serie || '-'}`, required:1, isActivity:false});
-    photoSubtitles.push({id: `${base}_panoramica`, title: `9.${10+idx*2+1} · PANORÁMICA ALREDEDOR TANQUE ${idx+1}`, required:4, isActivity:false});
-  });
-
-  // equipos plates
-  equipos.forEach((eq, idx) => {
-    photoSubtitles.push({id: `equipo_${idx+1}_placa`, title: `9.EQ${idx+1} · PLACA EQUIPO ${eq.Equipo || eq["Tipo de equipo"] || idx+1}`, required:1, isActivity:false});
-  });
-
-  // Add activities as subtitles (point 10): each activity requires 2 photos (before/after)
-  actividades.forEach((act, idx) => {
-    // Create an id that maps to the activity (use its id)
-    const aid = act.id;
-    photoSubtitles.push({id: aid, title: `10.${idx+1} · ${act.titulo} — ${contextLabel(act.contexto)}`, required:2, isActivity:true});
-  });
-
-  // init empty arrays
-  photoSubtitles.forEach(s => { photosBySubtitle[s.id] = []; });
-
-  renderPhotoTable();
-}
-
-/* Renders the futurist table */
-function renderPhotoTable(){
+function buildPhotoTable(){
   const tbody = document.querySelector('#photoTable tbody');
-  if(!tbody) return;
   tbody.innerHTML = '';
-  photoSubtitles.forEach(s => {
-    const uploaded = (photosBySubtitle[s.id] || []).length;
+  const rows = [];
+
+  // Punto 8
+  rows.push({ label: '8. EVIDENCIA (establecimiento)', tokens: ['sub_8_establecimiento','8_establecimiento','8'], required: 1, key: '8_establecimiento' });
+
+  // Bloque 9: we will generate tokens for panoramic + for each tank entries
+  // General panorama
+  rows.push({ label: '9.1 FOTO PANORÁMICA DE LA ZONA', tokens: ['9_1','9_panoramica_general','9_panoramica'], required: 1, key: '9_1' });
+
+  // For each tank: placa + panorama (4) + several specifics (one each)
+  state.tanques.forEach((t, idx)=>{
+    const i = idx+1;
+    rows.push({ label: `PLACA DE TANQUE ${i}`, tokens: [`tanque_${i}_placa`, `9_${rows.length+1}`], required: 1, key: `tanque_${i}_placa` });
+    rows.push({ label: `PANORÁMICA ALREDEDORES TANQUE ${i}`, tokens: [`tanque_${i}_panoramica`], required: 4, key: `tanque_${i}_panoramica` });
+    // several specific tokens
+    const specifics = ['bases','manometro_0_60','manometro_0_300','chicote','stickers','anclajes','valvula_llenado','valvula_seguridad','valvula_drenaje','multivalvula','medidor_porcentaje'];
+    specifics.forEach(s=>{
+      rows.push({ label: `${s.replace(/_/g,' ').toUpperCase()} TANQUE ${i}`, tokens: [`tanque_${i}_${s}`], required: 1, key: `tanque_${i}_${s}` });
+    });
+  });
+
+  // Equipos específicos minimal: for each equipo put placa + foto
+  const equipoTipos = ["estabilizador","quemador","vaporizador","tablero","bomba","dispensador_de_gas","decantador","detector"];
+  equipoTipos.forEach((tipo)=>{
+    rows.push({ label: `FOTO PLACA ${tipo.toUpperCase()}`, tokens: [ `${tipo}_placa` ], required: 1, key: `${tipo}_placa` });
+    rows.push({ label: `FOTO ${tipo.toUpperCase()}`, tokens: [ `${tipo}_foto` ], required: 1, key: `${tipo}_foto` });
+  });
+
+  // Map accesorios individuales (a few)
+  const mapa = ["llenado_toma_desplazada","retorno_toma_desplazada","alivio","regulador_2da","pull_away","alivio_hidrostatico","regulador_primera_etapa"];
+  mapa.forEach((m, idx)=>{
+    rows.push({ label: `FOTO ${m.replace(/_/g,' ').toUpperCase()}`, tokens: [ `${m}` , `${m}_1`], required: 1, key: `${m}` });
+  });
+
+  // Zona medidores
+  rows.push({ label: `FOTO ZONA MEDIDORES`, tokens: ['zona_medidores','zona_medidor'], required: 1, key: 'zona_medidores' });
+
+  // ACTIVIDADES: for each activity create two rows (antes/despues) grouped visually
+  state.actividades.forEach(a=>{
+    rows.push({ label: `ACT ${a.id} [${a.contexto}] ${a.titulo} - BEFORE`, tokens: [ `${a.id}_before`, `${a.id}__before`, `${a.id}_antes` ], required: 1, key: `${a.id}_before`, activityId: a.id });
+    rows.push({ label: `ACT ${a.id} [${a.contexto}] ${a.titulo} - AFTER`, tokens: [ `${a.id}_after`, `${a.id}__after`, `${a.id}_despues` ], required: 1, key: `${a.id}_after`, activityId: a.id });
+  });
+
+  // Punto 11
+  rows.push({ label: '11. EVIDENCIA DE LA INSTALACIÓN', tokens: ['11','11_evidencia','11_evidencia_instalacion'], required: 1, key: '11_evidencia' });
+
+  // Build table rows
+  rows.forEach((r, idx)=>{
     const tr = document.createElement('tr');
-    let actionsHtml = '';
-    if(s.isActivity){
-      actionsHtml = `<button class="photo-action-btn" onclick="openFileDialog('${s.id}','before')" style="background:#e9f7ff;color:#041018">Subir (Antes)</button>
-                     <button class="photo-action-btn" onclick="openFileDialog('${s.id}','after')" style="background:#e9f7ff;color:#041018">Subir (Después)</button>
-                     <button class="photo-action-btn" onclick="openPhotoPreview('${s.id}')">Ver</button>`;
-    } else {
-      actionsHtml = `<button class="photo-action-btn" onclick="openFileDialog('${s.id}')" style="background:#e9f7ff;color:#041018">Subir</button>
-                     <button class="photo-action-btn" onclick="openPhotoPreview('${s.id}')">Ver</button>`;
-    }
-    tr.innerHTML = `<td style="padding:10px">${s.title}</td>
-                    <td style="text-align:center">${s.required}</td>
-                    <td style="text-align:center">${uploaded}/${s.required}</td>
-                    <td>${actionsHtml}</td>`;
+    const count = countFilesForTokens(r.tokens);
+    const status = count >= r.required ? 'OK' : (count === 0 ? 'Sin fotos' : `Parcial (${count})`);
+    tr.innerHTML = `<td style="vertical-align:middle">${r.label}</td>
+      <td style="text-align:center;vertical-align:middle">${r.required}</td>
+      <td style="text-align:center;vertical-align:middle">${status}</td>
+      <td style="vertical-align:middle">
+        <button class="btn small ghost" onclick="attachPhotosForKey('${r.key}', ${r.required}, ${JSON.stringify(r.tokens).replace(/"/g,'&quot;')})">Adjuntar</button>
+        <button class="btn small" onclick="previewPhotosForKey('${r.key}', ${JSON.stringify(r.tokens).replace(/"/g,'&quot;')})">Previsualizar</button>
+        <button class="btn small danger" onclick="removePhotosForKey('${r.key}', ${JSON.stringify(r.tokens).replace(/"/g,'&quot;')})">Eliminar</button>
+      </td>`;
     tbody.appendChild(tr);
   });
+
+  // store rows for reference
+  window._photoRows = rows;
 }
 
-/* file dialog */
-function openFileDialog(subId, role){
-  const input = document.createElement('input');
-  input.type = 'file';
-  input.accept = 'image/*';
-  input.multiple = (role ? false : true); // activities: one per role
-  input.onchange = (e) => handleFilesSelected(subId, e.target.files, role);
+/* Count client-side attached files for tokens */
+function countFilesForTokens(tokens){
+  let c = 0;
+  tokens.forEach(t=>{
+    if(state.imagesByToken[t]) c += state.imagesByToken[t].length;
+  });
+  return c;
+}
+
+/* Attach photos: open hidden file input and then store files in state.imagesByToken under token key(s).
+   We'll set the filename pattern when appending to FormData (so token included).
+   The UI attaches files to the first token in tokens array (common behavior).
+*/
+function attachPhotosForKey(key, required, tokensJson){
+  const tokens = tokensJson;
+  // store callback target on hidden input
+  const input = document.getElementById('hiddenFileInput');
+  input._targetTokens = tokens;
+  input._targetKey = key;
+  input._requiredCount = required;
+  input.value = null;
   input.click();
 }
 
-/* handle selected files */
-function handleFilesSelected(subId, fileList, role){
-  if(!photosBySubtitle[subId]) photosBySubtitle[subId] = [];
-  for(let i=0;i<fileList.length;i++){
-    const f = fileList[i];
-    if(role === 'before' || role === 'after'){
-      // store wrapper with role
-      const genName = `${subId}__${role}__${f.name}`;
-      // ensure one per role: replace existing same-role entry
-      photosBySubtitle[subId] = photosBySubtitle[subId].filter(x => x.role !== role);
-      photosBySubtitle[subId].push({file:f, role:role, genName});
-    } else {
-      const genName = `${subId}__${photosBySubtitle[subId].length}__${f.name}`;
-      photosBySubtitle[subId].push({file:f, role:null, genName});
-    }
-  }
-  renderPhotoTable();
-}
-
-/* preview modal */
-function openPhotoPreview(subId){
-  const modal = document.getElementById('photoPreviewModal');
-  const grid = document.getElementById('previewGrid');
-  const title = document.getElementById('previewModalTitle');
-  grid.innerHTML = '';
-  const arr = photosBySubtitle[subId] || [];
-  title.innerText = `Previsualizar — ${subId} (${arr.length})`;
-  if(arr.length === 0){
-    grid.innerHTML = '<div class="small">No hay imágenes subidas</div>';
-  } else {
-    arr.forEach((entry, idx) => {
-      const url = URL.createObjectURL(entry.file);
-      const card = document.createElement('div');
-      card.className = 'preview-card';
-      card.innerHTML = `<img src="${url}" alt="img">
-        <div style="padding:8px;display:flex;justify-content:space-between;align-items:center">
-          <div style="font-size:12px;color:#666">${entry.role ? entry.role.toUpperCase() : ''}</div>
-          <div><button class="btn small ghost" onclick="removePhoto('${subId}',${idx})">Eliminar</button></div>
-        </div>`;
-      grid.appendChild(card);
-    });
-  }
-  modal.style.display = 'flex';
-}
-
-function closePhotoPreview(){
-  const modal = document.getElementById('photoPreviewModal');
-  modal.style.display = 'none';
-}
-
-/* remove photo */
-function removePhoto(subId, idx){
-  photosBySubtitle[subId].splice(idx,1);
-  renderPhotoTable();
-  openPhotoPreview(subId);
-}
-
-/* Build and send FormData with json+files */
-async function handleGenerateWithPhotos(){
-  // Build payload using existing buildPayload()
-  let payload = {};
-  try{
-    payload = buildPayload(); // this validates steps 1..5
-  }catch(e){
-    alert('Error en datos: ' + e);
-    return;
-  }
-
-  // append activities array into payload so backend can map descriptions
-  payload.actividades = actividades.map(a => ({id:a.id, contexto:a.contexto, titulo:a.titulo, tiempo:a.tiempo, estado:a.estado}));
-
-  const fd = new FormData();
-  fd.append('json', JSON.stringify(payload));
-
-  // append files
-  Object.keys(photosBySubtitle).forEach(subId => {
-    const arr = photosBySubtitle[subId] || [];
-    arr.forEach((entry, idx) => {
-      fd.append('files', entry.file, entry.genName || `${subId}__${idx}__${entry.file.name}`);
-    });
+document.getElementById('hiddenFileInput').addEventListener('change', function(ev){
+  const files = Array.from(ev.target.files || []);
+  const tokens = ev.target._targetTokens || [];
+  const key = ev.target._targetKey || (tokens && tokens[0]) || 'misc';
+  if(files.length === 0) return;
+  // store under first token for simplicity
+  const token = tokens[0] || key;
+  if(!state.imagesByToken[token]) state.imagesByToken[token] = [];
+  // append files (File objects) to state
+  files.forEach(f=>{
+    state.imagesByToken[token].push(f);
   });
+  // Give user feedback and rebuild table
+  buildPhotoTable();
+});
 
-  // send to /generar (multipart)
-  const btn = document.getElementById('finalGenerateWithPhotos');
-  try{
-    btn.disabled = true; btn.innerText = 'Generando...';
-    const resp = await fetch('/generar', { method:'POST', body: fd });
-    if(!resp.ok){
-      const err = await resp.json().catch(()=>({error:'Error servidor'}));
-      alert('Error: ' + (err.error || JSON.stringify(err)));
-      btn.disabled = false; btn.innerText = 'Generar Documento Final →';
-      return;
-    }
-    const blob = await resp.blob();
-    const disposition = resp.headers.get('content-disposition') || '';
-    let filename = 'Informe_Mantenimiento.docx';
-    const fnMatch = /filename\*=UTF-8''(.+)|filename="?(.+)"?/.exec(disposition);
-    if(fnMatch) filename = decodeURIComponent(fnMatch[1] || fnMatch[2] || filename);
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
-    URL.revokeObjectURL(url);
-    alert('Documento generado y descargado.');
-  }catch(err){
-    console.error(err);
-    alert('Error de red: ' + (err.message||err));
-  }finally{
-    btn.disabled = false; btn.innerText = 'Generar Documento Final →';
-  }
+/* Preview photos for a key (search by tokens) */
+function previewPhotosForKey(key, tokensJson){
+  const tokens = tokensJson;
+  const foundFiles = [];
+  tokens.forEach(t=>{
+    const arr = state.imagesByToken[t];
+    if(arr && arr.length) foundFiles.push(...arr);
+  });
+  // also check activity tokens (id_before etc) if none found
+  const previewModal = document.getElementById('photoPreviewModal');
+  const grid = document.getElementById('previewGrid');
+  grid.innerHTML = '';
+  if(foundFiles.length === 0){ alert('No hay fotos asociadas a este subtítulo (en el cliente).'); return; }
+  foundFiles.forEach(f=>{
+    const card = document.createElement('div');
+    card.className = 'preview-card';
+    const url = URL.createObjectURL(f);
+    card.innerHTML = `<img src="${url}" alt="${f.name}"><div style="padding:8px"><strong>${f.name}</strong></div>`;
+    grid.appendChild(card);
+  });
+  previewModal.style.display = 'flex';
+}
+function closePhotoPreview(){ document.getElementById('photoPreviewModal').style.display = 'none'; }
+
+/* remove photos for key -> clears all tokens provided */
+function removePhotosForKey(key, tokensJson){
+  const tokens = tokensJson;
+  tokens.forEach(t=>{
+    if(state.imagesByToken[t]) delete state.imagesByToken[t];
+  });
+  buildPhotoTable();
 }
 
 /* -------------------------
-   Final building payload & send (original handler retained)
-   Note: handleGenerate (original) kept for backward compatibility but
-   final generation now uses handleGenerateWithPhotos() when photos present.
+   BUILD PAYLOAD and SUBMIT (multipart/form-data)
    ------------------------- */
 
 function buildPayload(){
-  if(!saveGeneral(false)) { showStep(1); throw 'General incomplete'; }
-  if(tanks.length === 0){ showStep(2); throw 'Se requiere al menos un tanque'; }
+  // ensure general saved
+  if(!saveGeneral(false)) return null;
+  // build tanques array (backend expects keys serie, capacidad, anio, tipo, fabricante, porcentaje)
+  const tanques = state.tanques.map(t => ({
+    serie: t.serie || '',
+    capacidad: t.capacidad || '',
+    anio: t.anio || '',
+    tipo: t.tipo || '',
+    fabricante: t.fabricante || '',
+    porcentaje: t.porcentaje || ''
+  }));
 
-  const tanquesArr = tanks.map(t => ({"serie": t.serie || '',"capacidad": t.capacidad || '',"anio": t.anio || '',"tipo": t.tipo || '',"fabricante": t.fabricante || '',"porcentaje": t.porcentaje || ''}));
-
-  const accByTankPayload = {};
-  Object.keys(accessoriesByTank).forEach(k => {
-    const accs = accessoriesByTank[k];
-    const out = {};
-    Object.keys(accs).forEach(name => {
-      const fields = accs[name];
-      const any = Object.values(fields).some(v => String(v||'').trim() !== '');
-      if(any){
-        out[name] = {
-          "Marca": fields["Marca"] || '',
-          "Código": fields["Código"] || '',
-          "Serie": fields["Serie"] || '',
-          "Mes/Año de fabricación": fields["Mes/Año de fabricación"] || ''
-        };
-      }
-    });
-    if(Object.keys(out).length) accByTankPayload[k] = out;
+  // accesoriosTanque: backend expects object keyed by tank index (1-based): { "1": { "Válvula de llenado": {Marca, Código, Serie, Mes/Año de fabricación}, ... }, ... }
+  const accesoriosTanque = {};
+  Object.keys(state.accesoriosTanque).forEach(k=>{
+    accesoriosTanque[k] = state.accesoriosTanque[k];
   });
 
-  const redPayload = redes.map(r => ({"Tipo": r.Tipo || '',"Marca": r.Marca || '',"Serie": r.Serie || '',"Código": r.Código || '',"Mes/Año de fabricación": r["Mes/Año de fabricación"] || ''}));
+  // accesoriosRed is an array accepted as-is
+  const accesoriosRed = state.accesoriosRed.map(r => ({ Tipo: r.Tipo, Marca: r.Marca, Serie: r.Serie, Código: r.Código, "Mes/Año de fabricación": r['Mes/Año de fabricación'] }));
 
-  const equiposPayload = equipos.map(eq => Object.assign({}, eq));
+  // equipos: keep as-is but ensure keys friendly; backend expects fields like "Tipo de equipo" or "Equipo" names
+  const equipos = state.equipos.map(e => {
+    // make sure key "Tipo de equipo" exists
+    if(!e['Tipo de equipo'] && e['Tipo de equipo'] !== '') e['Tipo de equipo'] = e['Tipo de equipo'] || e['Tipo'] || e['Tipo de equipo'] || '';
+    return e;
+  });
 
-  const observaciones = {
+  // observaciones map
+  const obs = {
     "7.1": document.getElementById('obs_71').value.trim(),
     "7.2": document.getElementById('obs_72').value.trim(),
     "7.3": document.getElementById('obs_73').value.trim(),
@@ -1787,54 +1537,80 @@ function buildPayload(){
     "7.5": document.getElementById('obs_75').value.trim()
   };
 
+  // actividades: already have id, contexto, titulo, tiempo, estado — ensure format
+  const actividades = state.actividades.map(a=>({
+    id: a.id,
+    contexto: a.contexto,
+    titulo: a.titulo,
+    tiempo: a.tiempo,
+    estado: a.estado
+  }));
+
   const payload = {
-    "general": generalInfo,
-    "tanques": tanquesArr,
-    "accesoriosTanque": accByTankPayload,
-    "accesoriosRed": redPayload,
-    "equipos": equiposPayload,
-    "observaciones": observaciones
+    general: state.general,
+    tanques: tanques,
+    accesoriosTanque: accesoriosTanque,
+    accesoriosRed: accesoriosRed,
+    equipos: equipos,
+    observaciones: obs,
+    actividades: actividades
   };
+
   return payload;
 }
 
-/* Original handleGenerate preserved (JSON) - kept for backward compatibility */
+/* Final send: create FormData, append 'json' field (stringified payload) and append images.
+   For each token in state.imagesByToken, we'll append each File to formData with a filename that includes the token
+   Eg: formData.append('images', file, `${token}_${file.name}`)
+   The backend save_uploaded_files_tmp doesn't rely on field name but on filenames (it saves every file and later matches by filename).
+*/
 async function handleGenerate(){
+  const payload = buildPayload();
+  if(!payload) return;
+  // ask for confirmation
+  if(!confirm('Generar documento y subir imágenes (se enviará al servidor)?')) return;
+
+  // Build FormData
+  const fd = new FormData();
+  fd.append('json', JSON.stringify(payload));
+
+  // append files: iterate state.imagesByToken, use token as prefix for filenames
+  let appended = 0;
+  Object.entries(state.imagesByToken).forEach(([token, files])=>{
+    files.forEach((file, idx)=>{
+      // choose safe ext from file.name
+      const ext = (file.name.split('.').pop() || 'jpg');
+      const fname = `${token}_${idx+1}.${ext}`;
+      fd.append('images', file, fname); // field name 'images' repeated
+      appended++;
+    });
+  });
+
   try {
-    for(let i=1;i<=5;i++){
-      if(!validateStep(i)) { showStep(i); throw 'Validation failed'; }
-    }
-    const payload = buildPayload();
-    const btn = document.getElementById('finalGenerate'); // note: may not exist now
-    // send JSON original style
+    // show loading UI
+    document.getElementById('finalGenerateWithPhotos').innerText = 'Generando...';
+    document.getElementById('finalGenerateWithPhotos').disabled = true;
+
     const res = await fetch('/generar', {
       method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify(payload)
+      body: fd
     });
 
     if(!res.ok){
-      const err = await res.json().catch(()=>({error:'Error servidor'}));
-      alert('Error: ' + (err.error || JSON.stringify(err)));
-      if(btn){ btn.disabled = false; btn.innerText = 'Generar Word →'; }
+      const txt = await res.text();
+      alert('Error del servidor: ' + res.status + ' — ' + txt);
+      document.getElementById('finalGenerateWithPhotos').innerText = 'Generar Documento Final →';
+      document.getElementById('finalGenerateWithPhotos').disabled = false;
       return;
     }
 
-    const contentType = res.headers.get('content-type') || '';
-    if(contentType.includes('application/json')){
-      const j = await res.json();
-      alert('Error: ' + (j.error || JSON.stringify(j)));
-      if(btn){ btn.disabled = false; btn.innerText = 'Generar Word →'; }
-      return;
-    }
-
+    // receive file blob and download
     const blob = await res.blob();
-    const disposition = res.headers.get('content-disposition') || '';
+    const disposition = res.headers.get('Content-Disposition') || '';
     let filename = 'Informe_Mantenimiento.docx';
-    const fnMatch = /filename\*=UTF-8''(.+)|filename="?(.+)"?/.exec(disposition);
-    if(fnMatch){
-      filename = decodeURIComponent(fnMatch[1] || fnMatch[2] || filename);
-    }
+    const m = /filename="?([^"]+)"?/.exec(disposition);
+    if(m) filename = m[1];
+
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -1843,55 +1619,62 @@ async function handleGenerate(){
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
-    alert('Informe generado y descargado.');
-  } catch(err){
+
+    document.getElementById('finalGenerateWithPhotos').innerText = 'Generar Documento Final →';
+    document.getElementById('finalGenerateWithPhotos').disabled = false;
+    alert('Documento generado y descargado.');
+  } catch (err){
     console.error(err);
-    if(err !== 'Validation failed') alert('Error: ' + err);
-    const b = document.getElementById('finalGenerate');
-    if(b){ b.disabled = false; b.innerText = 'Generar Word →'; }
+    alert('Error al generar: ' + err.message);
+    document.getElementById('finalGenerateWithPhotos').innerText = 'Generar Documento Final →';
+    document.getElementById('finalGenerateWithPhotos').disabled = false;
   }
 }
 
-/* Bind top generate/button */
-document.getElementById('btnGenerate').addEventListener('click', () => {
+/* helper invoked by sidebar generate button */
+function handleGenerateSidebar(){
   showStep(6);
-});
-document.getElementById('downloadTemplateBtn').addEventListener('click', () => {
-  alert('La plantilla ahora no se descarga; usa el formulario para generar el informe.');
-});
+  // ensure general saved
+  if(!saveGeneral(false)) return;
+  showStep(8);
+}
 
-/* Reset */
+/* small helpers */
+function updateStatuses(){
+  document.getElementById('status-2').innerText = `${state.tanques.length} tanques`;
+  document.getElementById('status-3').innerText = Object.keys(state.accesoriosTanque).length ? 'OK' : '—';
+  document.getElementById('status-4').innerText = state.accesoriosRed.length ? state.accesoriosRed.length+' items' : '—';
+  document.getElementById('status-5').innerText = state.equipos.length ? state.equipos.length+' equipos' : '—';
+  document.getElementById('status-6').innerText = state.actividades.length ? state.actividades.length+' actividades' : '—';
+}
+
+/* reset all */
 function resetApp(){
-  if(!confirm('Reiniciar todos los datos?')) return;
-  generalInfo = {};
-  tanks = [];
-  accessoriesByTank = {};
-  redes = [];
-  equipos = [];
-  zona_medidores_val = null;
-  actividades = [];
-  photoSubtitles = [];
-  photosBySubtitle = {};
-  document.querySelectorAll('input[type=text], input[type=email], input[type=number], textarea').forEach(i => i.value = '');
-  document.querySelectorAll('select').forEach(s => s.value = '');
-  renderTanks(); renderAccList(''); renderRedList(); renderEquiposList();
-  updateTankSelectOptions();
+  if(!confirm('Reiniciar todo?')) return;
+  state = { general:{}, tanques:[], accesoriosTanque:{}, accesoriosRed:[], equipos:[], observaciones:{}, actividades:[], imagesByToken:{} };
+  actividadIdCounter = 1;
+  document.querySelectorAll('input[type=text], input[type=email], input[type=number], textarea').forEach(i=>i.value='');
+  renderTanks(); renderAccList(); renderRedList(); renderEquiposList(); renderActividadesTable(); buildPhotoTable();
+  updateStatuses();
   showStep(1);
 }
 
-/* Init */
-function init(){
-  updateProgressUI();
-  renderTanks();
-  renderRedList();
-  renderEquiposList();
-  updateTankSelectOptions();
-  // wire new final button in step 8
-  const finalBtn = document.getElementById('finalGenerateWithPhotos');
-  if(finalBtn) finalBtn.addEventListener('click', handleGenerateWithPhotos);
-  // ensure the step6 button moves to step7 (already has onclick)
-}
-init();
+/* attach to some buttons */
+document.getElementById('btnGenerate').addEventListener('click', ()=>showStep(6));
+document.getElementById('downloadTemplateBtn').addEventListener('click', ()=>{ alert('Descarga de plantilla no implementada en cliente.'); });
+
+/* wire generate final */
+document.getElementById('finalGenerateWithPhotos').addEventListener('click', ()=>handleGenerate());
+
+/* initial render */
+rebuildTankSelects();
+renderTanks();
+renderRedList();
+renderEquiposList();
+renderActividadesTable();
+buildPhotoTable();
+updateStatuses();
+
 </script>
 </body>
 </html>
