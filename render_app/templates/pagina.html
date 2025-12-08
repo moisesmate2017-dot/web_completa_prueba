@@ -144,6 +144,7 @@ td.accesorio {
 
 /* photo table small button */
 .photo-action-btn{padding:6px 10px;border-radius:8px;border:none;cursor:pointer;margin-right:6px}
+.disabled-btn{opacity:0.45; cursor:not-allowed}
 </style>
 </head>
 <body>
@@ -602,7 +603,7 @@ td.accesorio {
         <div class="controls" style="margin-top:16px">
           <button class="btn ghost" onclick="prevStep()">← Anterior</button>
           <div style="flex:1"></div>
-          <!-- Reemplazado: ahora avanza a Paso 7 (Actividades) -->
+          <!-- Avanza a Paso 7 (Actividades) -->
           <button class="btn primary" id="toStep7Btn" onclick="showStep(7)">Siguiente: Actividades →</button>
         </div>
       </section>
@@ -612,7 +613,7 @@ td.accesorio {
         <div class="card-header">
           <div>
             <div class="card-title">7 · Actividades realizadas (Subtítulo 10)</div>
-            <div class="hint">Agrega actividades por tanque o equipo. Cada actividad requiere fotos ANTES y DESPUÉS en el siguiente paso. (Selecciona tanque o equipo en "Contexto")</div>
+            <div class="hint">Agrega actividades por tanque o por red. Cada actividad requiere fotos ANTES y DESPUÉS en el siguiente paso.</div>
           </div>
           <div><span class="hint">Paso 7 / 8</span></div>
         </div>
@@ -620,11 +621,10 @@ td.accesorio {
         <div style="background:var(--light-card-bg); padding:12px; border-radius:10px; margin-bottom:10px; border:1px solid rgba(0,0,0,0.04)">
           <div style="display:flex;gap:8px;align-items:end;flex-wrap:wrap">
             <div style="min-width:240px">
-              <div class="label">Contexto (solo Tanque / Equipo)</div>
+              <div class="label">Contexto (tanque / red)</div>
               <div class="field">
-                <!-- Placeholder only; options are populated dynamically by rebuildTankSelects() -->
                 <select id="actividad_contexto" class="custom-select">
-                  <option value="">-- seleccionar --</option>
+                  <!-- options populated dynamically by rebuildTankSelects() -->
                 </select>
               </div>
             </div>
@@ -689,7 +689,8 @@ td.accesorio {
             <tbody></tbody>
           </table>
         </div>
-		<div style="margin-top:12px;display:flex;gap:8px">
+
+        <div style="margin-top:12px;display:flex;gap:8px">
           <button class="btn ghost" onclick="showStep(7)">← Anterior</button>
           <div style="flex:1"></div>
           <button class="btn primary" id="finalGenerateWithPhotos">Generar Documento Final →</button>
@@ -760,7 +761,7 @@ let state = {
   tanques: [],                 // array of { serie, capacidad, anio, tipo, fabricante, porcentaje }
   accesoriosTanque: {},       // { "1": { "Válvula de llenado": {Marca, Código, Serie, "Mes/Año de fabricación"}, ... } }
   accesoriosRed: [],          // array of { Tipo, Marca, Serie, Código, "Mes/Año de fabricación" }
-  equipos: [],                // array of objects consistent con estructura_equipos
+  equipos: [],                // array of objects consistent with estructura_equipos
   observaciones: {},          // { "7.1": "...", ... }
   actividades: [],            // array of { id, contexto, titulo, tiempo, estado }
   imagesByToken: {},          // { token: [File, File, ...] }  // used only client-side for preview; final upload uses FormData append
@@ -938,6 +939,13 @@ function editTank(idx){
   document.getElementById('tank_porcentaje').value = t.porcentaje || '';
   // remove old, user will re-add as new to simplify (could extend to real edit)
   state.tanques.splice(idx,1);
+  // rebuild accesorios keys so they remain aligned (remove last)
+  const newAcc = {};
+  state.tanques.forEach((_, i)=>{
+    const prev = state.accesoriosTanque[String(i+1)] || {};
+    newAcc[String(i+1)] = prev;
+  });
+  state.accesoriosTanque = newAcc;
   renderTanks();
 }
 
@@ -945,12 +953,10 @@ function removeTank(idx){
   if(!confirm('Eliminar tanque?')) return;
   // remove accesorios entry too: keys shift — to keep things consistent we'll rebuild accesoriosTanque keys
   state.tanques.splice(idx,1);
-  // rebuild accesoriosTanque
   const newAcc = {};
-  state.tanques.forEach((_, i)=>{
-    const oldKey = String(i+1);
-    // if previous existed for i+1 we reuse; else create blank
-    const prev = state.accesoriosTanque[oldKey] || {};
+  state.tanques.forEach((t, i)=>{
+    // reuse previous if exists, else blank
+    const prev = state.accesoriosTanque[String(i+1)] || {};
     newAcc[String(i+1)] = prev;
   });
   state.accesoriosTanque = newAcc;
@@ -965,11 +971,11 @@ function clearTanks(){
   renderTanks();
   updateStatuses();
 }
-
 /* -------------------------
    ACCESORIOS por TANQUE (modal)
    ------------------------- */
 function rebuildTankSelects(){
+  // step-3 select
   const sel = document.getElementById('select_tanque');
   sel.innerHTML = '<option value="">-- seleccionar tanque --</option>';
   state.tanques.forEach((t, idx)=>{
@@ -979,29 +985,29 @@ function rebuildTankSelects(){
     sel.appendChild(opt);
   });
 
-  // actividad contexto must include tanque_{i} values and equipos (NO red_ and NO general)
+  // actividad contexto must include tanque_{i} values and red_{i}
   const ctx = document.getElementById('actividad_contexto');
-  if (!ctx) return;
-  // remove previous tanque_ and equipo_ values
-  Array.from(ctx.options).forEach(o=>{
-    if(o.value.startsWith('tanque_') || o.value.startsWith('equipo_')) o.remove();
-  });
-
-  // add tanque options
+  if(!ctx) return;
+  ctx.innerHTML = ''; // clear all
+  // add tank contexts
   state.tanques.forEach((t, idx)=>{
     const opt = document.createElement('option');
     opt.value = `tanque_${idx+1}`;
     opt.textContent = `Tanque ${idx+1} — ${t.serie || ''}`;
     ctx.appendChild(opt);
   });
-
-  // equipos should be added to context options as equipo_{i}
-  state.equipos.forEach((e, idx)=>{
+  // add red contexts (red_1, red_2...) based on accesoriosRed present
+  state.accesoriosRed.forEach((r, idx)=>{
     const opt = document.createElement('option');
-    opt.value = `equipo_${idx+1}`;
-    opt.textContent = `Equipo ${idx+1} — ${e.Equipo || e['Equipo'] || e['TAG'] || e['Tipo de equipo'] || ''}`;
+    opt.value = `red_${idx+1}`;
+    opt.textContent = `Red ${idx+1} — ${r.Tipo || ''}`;
     ctx.appendChild(opt);
   });
+
+  // equipos no van al contexto (según tus indicaciones), no se añadirá 'equipo_' aquí.
+  // Attach onchange handler to select_tanque so that acc-list updates when user switches
+  const selectTankEl = document.getElementById('select_tanque');
+  if(selectTankEl) selectTankEl.onchange = renderAccList;
 }
 
 function openAccModalFromStep3(){
@@ -1083,8 +1089,11 @@ function renderAccList(){
   const sel = document.getElementById('select_tanque').value;
   const container = document.getElementById('acc-list');
   container.innerHTML = '';
-  if(!sel){ container.innerHTML = '<div class="small">Selecciona un tanque para ver sus accesorios.</div>'; return; }
+  if(!sel){ container.innerHTML = '<div class="small">Selecciona un tanque para ver sus accesorios.</div>'; document.getElementById('acc-titulo').innerText = 'Accesorio del tanque —'; return; }
   const key = String(sel);
+  const tIndex = parseInt(key) - 1;
+  const serie = state.tanques[tIndex] ? (state.tanques[tIndex].serie || '-') : '-';
+  document.getElementById('acc-titulo').innerText = `Accesorio del tanque — Tanque ${key} (Serie: ${serie})`;
   const accs = state.accesoriosTanque[key] || {};
   const table = document.createElement('table');
   table.className = 'acc-table';
@@ -1131,9 +1140,6 @@ function addRed(){
   updateStatuses();
 }
 
-/* -------------------------
-   Resto (Parte 2 del JS)
-   ------------------------- */
 function renderRedList(){
   const container = document.getElementById('redList');
   container.innerHTML = '';
@@ -1162,6 +1168,7 @@ function editRed(idx){
   // remove so re-adding will save new values
   state.accesoriosRed.splice(idx,1);
   renderRedList();
+  rebuildTankSelects();
 }
 
 function removeRed(idx){
@@ -1281,13 +1288,14 @@ function removeEquipo(idx){
    ACTIVIDADES
    ------------------------- */
 function addActividad(){
-  const ctx = document.getElementById('actividad_contexto').value || '';
-  if(!ctx){ alert('Selecciona un contexto (tanque o equipo)'); return; }
+  const ctx = document.getElementById('actividad_contexto').value;
+  if(!ctx){ alert('Selecciona un contexto (tanque o red)'); return; }
   const titulo = document.getElementById('actividad_titulo').value.trim();
   const tiempo = document.getElementById('actividad_tiempo').value.trim();
   const estado = document.getElementById('actividad_estado').value;
   if(!titulo){ alert('Ingresa título de actividad'); return; }
   const id = actividadIdCounter++;
+  // context must be tanque_X or red_X
   state.actividades.push({ id: String(id), contexto: ctx, titulo, tiempo, estado });
   // clear inputs
   document.getElementById('actividad_titulo').value='';
@@ -1318,6 +1326,7 @@ function editActividad(id){
   // remove old entry (user will re-add)
   state.actividades.splice(idx,1);
   renderActividadesTable();
+  buildPhotoTable();
 }
 
 function removeActividad(id){
@@ -1343,7 +1352,7 @@ function onActividadesNext(){
   - Bloque 9: generated tokens for each expected subtitulo (we'll mirror backend token strategy simply)
   - Activities (each activity requires two files: {id}_before and {id}_after)
   - Punto 11
- We'll create a manageable list of lines: each line has: label, tokens(array of candidate tokens), requiredCount (number of images expected), note
+ The table will disable attach buttons for rows that "no aplican" according to the current state (e.g., accesorios de red no añadidos).
 */
 
 function buildPhotoTable(){
@@ -1352,61 +1361,68 @@ function buildPhotoTable(){
   const rows = [];
 
   // Punto 8
-  rows.push({ label: '8. EVIDENCIA (establecimiento)', tokens: ['sub_8_establecimiento','8_establecimiento','8'], required: 1, key: '8_establecimiento' });
+  rows.push({ label: '8. EVIDENCIA (establecimiento)', tokens: ['sub_8_establecimiento','8_establecimiento','8'], required: 1, key: '8_establecimiento', enabled: true });
 
-  // Bloque 9: we will generate tokens for panoramic + for each tank entries
-  // General panorama
-  rows.push({ label: '9.1 FOTO PANORÁMICA DE LA ZONA', tokens: ['9_1','9_panoramica_general','9_panoramica'], required: 1, key: '9_1' });
+  // Bloque 9: general panorama token 9_1
+  rows.push({ label: '9.1 FOTO PANORÁMICA DE LA ZONA', tokens: ['9_1','9_panoramica_general','9_panoramica'], required: 1, key: '9_1', enabled: true });
 
-  // For each tank: placa + panorama (4) + several specifics (one each)
+  // For each tank -> placa, panoramica (4), specifics
+  let dynamicIndex = 2; // to emulate numbering 9.2, 9.3... (frontend numbering for visual only)
   state.tanques.forEach((t, idx)=>{
     const i = idx+1;
-    rows.push({ label: `PLACA DE TANQUE ${i}`, tokens: [`tanque_${i}_placa`, `9_${rows.length+1}`], required: 1, key: `tanque_${i}_placa` });
-    rows.push({ label: `PANORÁMICA ALREDEDORES TANQUE ${i}`, tokens: [`tanque_${i}_panoramica`], required: 4, key: `tanque_${i}_panoramica` });
-    // several specific tokens
+    rows.push({ label: `PLACA DE TANQUE ${i} — Serie: ${t.serie || '-'}`, tokens: [`tanque_${i}_placa`, `9_${dynamicIndex}`], required: 1, key: `tanque_${i}_placa`, enabled: true }); dynamicIndex++;
+    rows.push({ label: `PANORÁMICA ALREDEDORES TANQUE ${i}`, tokens: [`tanque_${i}_panoramica`, `9_${dynamicIndex}`], required: 4, key: `tanque_${i}_panoramica`, enabled: true }); dynamicIndex++;
     const specifics = ['bases','manometro_0_60','manometro_0_300','chicote','stickers','anclajes','valvula_llenado','valvula_seguridad','valvula_drenaje','multivalvula','medidor_porcentaje'];
     specifics.forEach(s=>{
-      rows.push({ label: `${s.replace(/_/g,' ').toUpperCase()} TANQUE ${i}`, tokens: [`tanque_${i}_${s}`], required: 1, key: `tanque_${i}_${s}` });
+      rows.push({ label: `${s.replace(/_/g,' ').toUpperCase()} TANQUE ${i}`, tokens: [`tanque_${i}_${s}`, `9_${dynamicIndex}`], required: 1, key: `tanque_${i}_${s}`, enabled: true });
+      dynamicIndex++;
     });
   });
 
-  // Equipos específicos minimal: for each equipo put placa + foto
+  // Equipos específicos (foto de placa y foto) — siempre habilitados (backend mostrará No cuenta si aplica)
   const equipoTipos = ["estabilizador","quemador","vaporizador","tablero","bomba","dispensador_de_gas","decantador","detector"];
   equipoTipos.forEach((tipo)=>{
-    rows.push({ label: `FOTO PLACA ${tipo.toUpperCase()}`, tokens: [ `${tipo}_placa` ], required: 1, key: `${tipo}_placa` });
-    rows.push({ label: `FOTO ${tipo.toUpperCase()}`, tokens: [ `${tipo}_foto` ], required: 1, key: `${tipo}_foto` });
+    rows.push({ label: `FOTO PLACA ${tipo.toUpperCase()}`, tokens: [ `${tipo}_placa` ], required: 1, key: `${tipo}_placa`, enabled: Boolean(state.equipos.some(e => (e['Tipo de equipo']||'') === tipo)) });
+    rows.push({ label: `FOTO ${tipo.toUpperCase()}`, tokens: [ `${tipo}_foto` ], required: 1, key: `${tipo}_foto`, enabled: Boolean(state.equipos.some(e => (e['Tipo de equipo']||'') === tipo)) });
   });
 
-  // Map accesorios individuales (a few)
+  // Map accesorios individuales (red). Enable only if accesorio exists in state.accesoriosRed
   const mapa = ["llenado_toma_desplazada","retorno_toma_desplazada","alivio","regulador_2da","pull_away","alivio_hidrostatico","regulador_primera_etapa"];
   mapa.forEach((m, idx)=>{
-    rows.push({ label: `FOTO ${m.replace(/_/g,' ').toUpperCase()}`, tokens: [ `${m}` , `${m}_1`], required: 1, key: `${m}` });
+    const exists = state.accesoriosRed.some(r=> (r.Tipo||'').toLowerCase() === m.toLowerCase());
+    rows.push({ label: `FOTO ${m.replace(/_/g,' ').toUpperCase()}`, tokens: [ `${m}` , `${m}_1`], required: 1, key: `${m}`, enabled: exists });
   });
 
-  // Zona medidores
-  rows.push({ label: `FOTO ZONA MEDIDORES`, tokens: ['zona_medidores','zona_medidor'], required: 1, key: 'zona_medidores' });
+  // Zona medidores (enabled if accesoriosRed contains zona_medidores)
+  const zonaExists = state.accesoriosRed.some(r=> (r.Tipo||'').toLowerCase() === 'zona_medidores');
+  rows.push({ label: `FOTO ZONA MEDIDORES`, tokens: ['zona_medidores','zona_medidor'], required: 1, key: 'zona_medidores', enabled: zonaExists });
 
   // ACTIVIDADES: for each activity create two rows (antes/despues) grouped visually
   state.actividades.forEach(a=>{
-    rows.push({ label: `ACT ${a.id} [${a.contexto}] ${a.titulo} - BEFORE`, tokens: [ `${a.id}_before`, `${a.id}__before`, `${a.id}_antes` ], required: 1, key: `${a.id}_before`, activityId: a.id });
-    rows.push({ label: `ACT ${a.id} [${a.contexto}] ${a.titulo} - AFTER`, tokens: [ `${a.id}_after`, `${a.id}__after`, `${a.id}_despues` ], required: 1, key: `${a.id}_after`, activityId: a.id });
+    rows.push({ label: `ACT ${a.id} [${a.contexto}] ${a.titulo} - BEFORE`, tokens: [ `${a.id}_before`, `${a.id}__before`, `${a.id}_antes` ], required: 1, key: `${a.id}_before`, activityId: a.id, enabled: true });
+    rows.push({ label: `ACT ${a.id} [${a.contexto}] ${a.titulo} - AFTER`, tokens: [ `${a.id}_after`, `${a.id}__after`, `${a.id}_despues` ], required: 1, key: `${a.id}_after`, activityId: a.id, enabled: true });
   });
 
   // Punto 11
-  rows.push({ label: '11. EVIDENCIA DE LA INSTALACIÓN', tokens: ['11','11_evidencia','11_evidencia_instalacion'], required: 1, key: '11_evidencia' });
+  rows.push({ label: '11. EVIDENCIA DE LA INSTALACIÓN', tokens: ['11','11_evidencia','11_evidencia_instalacion'], required: 1, key: '11_evidencia', enabled: true });
 
   // Build table rows
   rows.forEach((r, idx)=>{
     const tr = document.createElement('tr');
     const count = countFilesForTokens(r.tokens);
-    const status = count >= r.required ? 'OK' : (count === 0 ? 'Sin fotos' : `Parcial (${count})`);
+    const status = count >= r.required ? 'OK' : (count === 0 ? (r.enabled ? 'Sin fotos' : 'No aplica') : `Parcial (${count})`);
+    // disable attach if not enabled
+    const attachBtn = r.enabled ? `<button class="btn small ghost" onclick="attachPhotosForKey('${r.key}', ${r.required}, ${JSON.stringify(r.tokens).replace(/"/g,'&quot;')})">Adjuntar</button>` : `<button class="btn small ghost disabled-btn" disabled>Adjuntar</button>`;
+    const previewBtn = (count>0) ? `<button class="btn small" onclick="previewPhotosForKey('${r.key}', ${JSON.stringify(r.tokens).replace(/"/g,'&quot;')})">Previsualizar</button>` : `<button class="btn small disabled-btn" disabled>Previsualizar</button>`;
+    const removeBtn = (count>0) ? `<button class="btn small danger" onclick="removePhotosForKey('${r.key}', ${JSON.stringify(r.tokens).replace(/"/g,'&quot;')})">Eliminar</button>` : `<button class="btn small danger disabled-btn" disabled>Eliminar</button>`;
+
     tr.innerHTML = `<td style="vertical-align:middle">${r.label}</td>
       <td style="text-align:center;vertical-align:middle">${r.required}</td>
       <td style="text-align:center;vertical-align:middle">${status}</td>
       <td style="vertical-align:middle">
-        <button class="btn small ghost" onclick="attachPhotosForKey('${r.key}', ${r.required}, ${JSON.stringify(r.tokens).replace(/"/g,'&quot;')})">Adjuntar</button>
-        <button class="btn small" onclick="previewPhotosForKey('${r.key}', ${JSON.stringify(r.tokens).replace(/"/g,'&quot;')})">Previsualizar</button>
-        <button class="btn small danger" onclick="removePhotosForKey('${r.key}', ${JSON.stringify(r.tokens).replace(/"/g,'&quot;')})">Eliminar</button>
+        ${attachBtn}
+        ${previewBtn}
+        ${removeBtn}
       </td>`;
     tbody.appendChild(tr);
   });
@@ -1463,7 +1479,6 @@ function previewPhotosForKey(key, tokensJson){
     const arr = state.imagesByToken[t];
     if(arr && arr.length) foundFiles.push(...arr);
   });
-  // also check activity tokens (id_before etc) if none found
   const previewModal = document.getElementById('photoPreviewModal');
   const grid = document.getElementById('previewGrid');
   grid.innerHTML = '';
@@ -1516,8 +1531,7 @@ function buildPayload(){
 
   // equipos: keep as-is but ensure keys friendly; backend expects fields like "Tipo de equipo" or "Equipo" names
   const equipos = state.equipos.map(e => {
-    // make sure key "Tipo de equipo" exists
-    if(!e['Tipo de equipo'] && e['Tipo de equipo'] !== '') e['Tipo de equipo'] = e['Tipo de equipo'] || e['Tipo'] || e['Tipo de equipo'] || '';
+    if(!e['Tipo de equipo']) e['Tipo de equipo'] = e['Tipo'] || '';
     return e;
   });
 
@@ -1670,3 +1684,4 @@ updateStatuses();
 
 </script>
 </body>
+</html>
