@@ -733,7 +733,6 @@ td.accesorio {
 
 <!-- Hidden file input used to attach images for tokens -->
 <input type="file" id="hiddenFileInput" style="display:none" accept="image/*" multiple>
-
 <script>
 /* -------------------------
    Allowed emails (client-side)
@@ -971,6 +970,7 @@ function clearTanks(){
   renderTanks();
   updateStatuses();
 }
+
 /* -------------------------
    ACCESORIOS por TANQUE (modal)
    ------------------------- */
@@ -985,7 +985,7 @@ function rebuildTankSelects(){
     sel.appendChild(opt);
   });
 
-  // actividad contexto must include tanque_{i} values and red_{i}
+  // actividad contexto must include tanque_{i} values and two fixed redes: red_llenado and red_consumo
   const ctx = document.getElementById('actividad_contexto');
   if(!ctx) return;
   ctx.innerHTML = ''; // clear all
@@ -996,15 +996,18 @@ function rebuildTankSelects(){
     opt.textContent = `Tanque ${idx+1} — ${t.serie || ''}`;
     ctx.appendChild(opt);
   });
-  // add red contexts (red_1, red_2...) based on accesoriosRed present
-  state.accesoriosRed.forEach((r, idx)=>{
-    const opt = document.createElement('option');
-    opt.value = `red_${idx+1}`;
-    opt.textContent = `Red ${idx+1} — ${r.Tipo || ''}`;
-    ctx.appendChild(opt);
-  });
 
-  // equipos no van al contexto (según tus indicaciones), no se añadirá 'equipo_' aquí.
+  // add fixed red contexts (exact names as requested)
+  const optL = document.createElement('option');
+  optL.value = 'red_llenado';
+  optL.textContent = 'Red de llenado y retorno';
+  ctx.appendChild(optL);
+
+  const optC = document.createElement('option');
+  optC.value = 'red_consumo';
+  optC.textContent = 'Red de consumo';
+  ctx.appendChild(optC);
+
   // Attach onchange handler to select_tanque so that acc-list updates when user switches
   const selectTankEl = document.getElementById('select_tanque');
   if(selectTankEl) selectTankEl.onchange = renderAccList;
@@ -1295,7 +1298,7 @@ function addActividad(){
   const estado = document.getElementById('actividad_estado').value;
   if(!titulo){ alert('Ingresa título de actividad'); return; }
   const id = actividadIdCounter++;
-  // context must be tanque_X or red_X
+  // context must be tanque_X or red_*
   state.actividades.push({ id: String(id), contexto: ctx, titulo, tiempo, estado });
   // clear inputs
   document.getElementById('actividad_titulo').value='';
@@ -1379,17 +1382,28 @@ function buildPhotoTable(){
     });
   });
 
-  // Equipos específicos (foto de placa y foto) — siempre habilitados (backend mostrará No cuenta si aplica)
+  // Equipos específicos (foto de placa y foto)
   const equipoTipos = ["estabilizador","quemador","vaporizador","tablero","bomba","dispensador_de_gas","decantador","detector"];
   equipoTipos.forEach((tipo)=>{
     rows.push({ label: `FOTO PLACA ${tipo.toUpperCase()}`, tokens: [ `${tipo}_placa` ], required: 1, key: `${tipo}_placa`, enabled: Boolean(state.equipos.some(e => (e['Tipo de equipo']||'') === tipo)) });
     rows.push({ label: `FOTO ${tipo.toUpperCase()}`, tokens: [ `${tipo}_foto` ], required: 1, key: `${tipo}_foto`, enabled: Boolean(state.equipos.some(e => (e['Tipo de equipo']||'') === tipo)) });
   });
 
-  // Map accesorios individuales (red). Enable only if accesorio exists in state.accesoriosRed
+  // Map accesorios individuales (red).
+  // Special logic: if at least one of the toma desplazada accessories (llenado_toma_desplazada OR retorno_toma_desplazada)
+  // exists in accesoriosRed, enable the subtítulos relacionados a toma desplazada (both).
   const mapa = ["llenado_toma_desplazada","retorno_toma_desplazada","alivio","regulador_2da","pull_away","alivio_hidrostatico","regulador_primera_etapa"];
+  // detect existence
+  const tomaExists = state.accesoriosRed.some(r=>{
+    const t = (r.Tipo||'').toLowerCase();
+    return t === 'llenado_toma_desplazada' || t === 'retorno_toma_desplazada';
+  });
   mapa.forEach((m, idx)=>{
-    const exists = state.accesoriosRed.some(r=> (r.Tipo||'').toLowerCase() === m.toLowerCase());
+    let exists = state.accesoriosRed.some(r=> (r.Tipo||'').toLowerCase() === m.toLowerCase());
+    // for toma desplazada types, if either exists we enable both related rows
+    if(m === 'llenado_toma_desplazada' || m === 'retorno_toma_desplazada'){
+      exists = tomaExists;
+    }
     rows.push({ label: `FOTO ${m.replace(/_/g,' ').toUpperCase()}`, tokens: [ `${m}` , `${m}_1`], required: 1, key: `${m}`, enabled: exists });
   });
 
