@@ -1413,8 +1413,8 @@ function buildPhotoTable(){
 
   // ACTIVIDADES: for each activity create two rows (antes/despues) grouped visually
   state.actividades.forEach(a=>{
-    rows.push({ label: `ACT ${a.id} [${a.contexto}] ${a.titulo} - BEFORE`, tokens: [ `${a.id}_before`, `${a.id}__before`, `${a.id}_antes` ], required: 1, key: `${a.id}_before`, activityId: a.id, enabled: true });
-    rows.push({ label: `ACT ${a.id} [${a.contexto}] ${a.titulo} - AFTER`, tokens: [ `${a.id}_after`, `${a.id}__after`, `${a.id}_despues` ], required: 1, key: `${a.id}_after`, activityId: a.id, enabled: true });
+    rows.push({ label: `ACT ${a.id} [${a.contexto}] ${a.titulo} - ANTES`, tokens: [ `${a.id}_before`, `${a.id}__before`, `${a.id}_antes` ], required: 1, key: `${a.id}_before`, activityId: a.id, enabled: true });
+    rows.push({ label: `ACT ${a.id} [${a.contexto}] ${a.titulo} - DESPUES`, tokens: [ `${a.id}_after`, `${a.id}__after`, `${a.id}_despues` ], required: 1, key: `${a.id}_after`, activityId: a.id, enabled: true });
   });
 
   // Punto 11
@@ -1699,3 +1699,4 @@ updateStatuses();
 </script>
 </body>
 </html>
+
