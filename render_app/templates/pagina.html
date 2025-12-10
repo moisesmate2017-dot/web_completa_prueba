@@ -1398,15 +1398,17 @@ function buildPhotoTable(){
     const t = (r.Tipo||'').toLowerCase();
     return t === 'llenado_toma_desplazada' || t === 'retorno_toma_desplazada';
   });
+	const aux = 0
   mapa.forEach((m, idx)=>{
     let exists = state.accesoriosRed.some(r=> (r.Tipo||'').toLowerCase() === m.toLowerCase());
     // for toma desplazada types, if either exists we enable both related rows
-    if(m === 'llenado_toma_desplazada' || m === 'retorno_toma_desplazada'){
+    if((m === 'llenado_toma_desplazada' || m === 'retorno_toma_desplazada') && aux === 0){
       exists = tomaExists;
 		rows.push({ label: `FOTO PUNTO DE TRANSFERENCIA DESPLAZADO`, tokens: ['punto_trans_desplazada'], required: 1, key: 'punto_trans_desplazada', enabled: true });
 		rows.push({ label: `FOTO CAJA DE TOMA DESPLAZADA`, tokens: ['toma_desplazada_caja'], required: 1, key: 'toma_desplazada_caja', enabled: true });
 		rows.push({ label: `FOTO RECORRIDO DESDE TOMA DESPLAZADA`, tokens: ['toma_desplazada_recorrido'], required: 1, key: 'toma_desplazada_recorrido', enabled: true });
-    }
+		aux = 1
+	}
     rows.push({ label: `FOTO ${m.replace(/_/g,' ').toUpperCase()}`, tokens: [ `${m}` , `${m}_1`], required: 1, key: `${m}`, enabled: exists });
   });
 
@@ -1702,6 +1704,7 @@ updateStatuses();
 </script>
 </body>
 </html>
+
 
 
 
