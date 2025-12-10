@@ -797,8 +797,8 @@ def generar_docx_desde_dfs(
         for a in acts:
             doc.add_paragraph(f"- {a.get('titulo','Actividad')}. Tiempo: {a.get('tiempo','')}. Estado: {a.get('estado','')}")
             aid = a.get("id")
-            before_tokens = [f"{aid}_before", f"{aid}__before", f"{aid}_antes", aid]
-            after_tokens = [f"{aid}_after", f"{aid}__after", f"{aid}_despues", aid]
+            before_tokens = [f"{aid}_before", f"{aid}__before", f"{aid}_antes"]
+            after_tokens = [f"{aid}_after", f"{aid}__after", f"{aid}_despues"]
             imgs_b = find_images_for_any_token(images_list, before_tokens)
             imgs_a = find_images_for_any_token(images_list, after_tokens)
             if imgs_b:
@@ -818,8 +818,8 @@ def generar_docx_desde_dfs(
         for a in acts_llenado:
             doc.add_paragraph(f"- {a.get('titulo','Actividad')}. Tiempo: {a.get('tiempo','')}. Estado: {a.get('estado','')}")
             aid = a.get("id")
-            before_tokens = [f"{aid}_before", f"{aid}__before", f"{aid}_antes", aid]
-            after_tokens = [f"{aid}_after", f"{aid}__after", f"{aid}_despues", aid]
+            before_tokens = [f"{aid}_before", f"{aid}__before", f"{aid}_antes"]
+            after_tokens = [f"{aid}_after", f"{aid}__after", f"{aid}_despues"]
             imgs_b = find_images_for_any_token(images_list, before_tokens)
             imgs_a = find_images_for_any_token(images_list, after_tokens)
             if imgs_b:
@@ -839,8 +839,8 @@ def generar_docx_desde_dfs(
         for a in acts_consumo:
             doc.add_paragraph(f"- {a.get('titulo','Actividad')}. Tiempo: {a.get('tiempo','')}. Estado: {a.get('estado','')}")
             aid = a.get("id")
-            before_tokens = [f"{aid}_before", f"{aid}__before", f"{aid}_antes", aid]
-            after_tokens = [f"{aid}_after", f"{aid}__after", f"{aid}_despues", aid]
+            before_tokens = [f"{aid}_before", f"{aid}__before", f"{aid}_antes"]
+            after_tokens = [f"{aid}_after", f"{aid}__after", f"{aid}_despues"]
             imgs_b = find_images_for_any_token(images_list, before_tokens)
             imgs_a = find_images_for_any_token(images_list, after_tokens)
             if imgs_b:
@@ -1109,4 +1109,5 @@ def index():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+
 
