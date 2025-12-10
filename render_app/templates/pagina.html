@@ -1398,7 +1398,7 @@ function buildPhotoTable(){
     const t = (r.Tipo||'').toLowerCase();
     return t === 'llenado_toma_desplazada' || t === 'retorno_toma_desplazada';
   });
-	const aux = 0
+	const aux = 0;
   mapa.forEach((m, idx)=>{
     let exists = state.accesoriosRed.some(r=> (r.Tipo||'').toLowerCase() === m.toLowerCase());
     // for toma desplazada types, if either exists we enable both related rows
@@ -1704,6 +1704,7 @@ updateStatuses();
 </script>
 </body>
 </html>
+
 
 
 
