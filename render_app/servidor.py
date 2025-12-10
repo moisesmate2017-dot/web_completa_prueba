@@ -1,4 +1,4 @@
-# servidor.py  (ACTUALIZADO - manejo fino de toma desplazada y subtítulos dinámicos de actividad)
+
 import os
 import tempfile
 import shutil
@@ -675,7 +675,7 @@ def generar_docx_desde_dfs(
 
     if toma_group_exists:
         # tokens frontend uses: 'toma_desplazada', 'toma_desplazada_caja', 'toma_desplazada_recorrido'
-        bloque_9.append((f"9.{contador}. FOTO DEL PUNTO DE TRANSFERENCIA DESPLAZADO", True, 1, [f"9_{contador}", "toma_desplazada", "llenado_toma_desplazada", "retorno_toma_desplazada"])); contador += 1
+        bloque_9.append((f"9.{contador}. FOTO DEL PUNTO DE TRANSFERENCIA DESPLAZADO", True, 1, [f"9_{contador}", "punto_trans_desplazada"])); contador += 1
         bloque_9.append((f"9.{contador}. FOTO DE LA CAJA DE LA TOMA DESPLAZADA", True, 1, [f"9_{contador}", "toma_desplazada_caja"])); contador += 1
         bloque_9.append((f"9.{contador}. FOTO DEL RECORRIDO DESDE TOMA DESPLAZADA HASTA TANQUE", True, 1, [f"9_{contador}", "toma_desplazada_recorrido"])); contador += 1
 
@@ -1109,5 +1109,6 @@ def index():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+
 
 
