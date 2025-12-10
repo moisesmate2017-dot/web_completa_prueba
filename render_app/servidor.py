@@ -765,7 +765,7 @@ def generar_docx_desde_dfs(
         # para cada actividad en este tanque, insertar título y antes/después buscando por el id del activity
         for a in acts:
             # activity title
-            doc.add_paragraph(f"- {a.get('titulo','Actividad')}. Tiempo: {a.get('tiempo','')}. Estado: {a.get('estado','')}")
+            doc.add_paragraph(f" * {a.get('titulo','Actividad')}." )
             # buscar imágenes con token actividad.id + "_before" / "_after" o solo actividad.id
             aid = a.get("id")
             before_tokens = [f"{aid}_before", f"{aid}__before", f"{aid}_antes"]
@@ -816,7 +816,7 @@ def generar_docx_desde_dfs(
     if acts_llenado:
         add_subtitle(doc, f"10.{sec_idx}. TRABAJOS REALIZADOS EN RED DE LLENADO Y RETORNO", indent=True)
         for a in acts_llenado:
-            doc.add_paragraph(f"- {a.get('titulo','Actividad')}. Tiempo: {a.get('tiempo','')}. Estado: {a.get('estado','')}")
+            doc.add_paragraph(f"* {a.get('titulo','Actividad')}.")
             aid = a.get("id")
             before_tokens = [f"{aid}_before", f"{aid}__before", f"{aid}_antes"]
             after_tokens = [f"{aid}_after", f"{aid}__after", f"{aid}_despues"]
@@ -837,7 +837,7 @@ def generar_docx_desde_dfs(
     if acts_consumo:
         add_subtitle(doc, f"10.{sec_idx}. TRABAJOS REALIZADOS EN RED DE CONSUMO", indent=True)
         for a in acts_consumo:
-            doc.add_paragraph(f"- {a.get('titulo','Actividad')}. Tiempo: {a.get('tiempo','')}. Estado: {a.get('estado','')}")
+            doc.add_paragraph(f"- {a.get('titulo','Actividad')}.")
             aid = a.get("id")
             before_tokens = [f"{aid}_before", f"{aid}__before", f"{aid}_antes"]
             after_tokens = [f"{aid}_after", f"{aid}__after", f"{aid}_despues"]
