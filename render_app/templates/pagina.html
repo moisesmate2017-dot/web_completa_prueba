@@ -72,7 +72,7 @@ html,body{height:100%;margin:0;background:linear-gradient(160deg,var(--bg-1),var
 .btn{padding:10px 14px;border-radius:999px;border:none;font-weight:700;cursor:pointer}
 .btn.primary{background:linear-gradient(90deg,var(--accent), #6efcff); color:#041018; box-shadow:0 14px 40px rgba(0,194,255,0.08)}
 .btn.ghost{background:#ffffff;border:1px solid rgba(0,0,0,0.06); color:#041018}
-.btn.warn{background:linear-gradient(90deg,var(--gold), #ffd36b); color:#081017}
+.btn.warn{padding: 8px 10px; background:linear-gradient(90deg,var(--gold), #ffd36b); color:#081017}
 .btn.danger{background:var(--danger); color:#041018}
 .btn.small{padding:6px 10px;border-radius:8px;font-weight:600}
 
@@ -727,7 +727,7 @@ td.accesorio {
   <div class="modal">
     <h3 id="previewModalTitle">Previsualizar fotos</h3>
     <div id="previewGrid" class="grid" style="margin-top:12px"></div>
-    <div style="text-align:right;margin-top:12px"><button class="btn" onclick="closePhotoPreview()">Cerrar</button></div>
+    <div style="text-align:right;margin-top:12px"><button class="btn danger" onclick="closePhotoPreview()">Cerrar</button></div>
   </div>
 </div>
 
@@ -1699,6 +1699,7 @@ updateStatuses();
 </script>
 </body>
 </html>
+
 
 
 
