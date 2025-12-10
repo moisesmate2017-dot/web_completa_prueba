@@ -410,7 +410,7 @@ td.accesorio {
           </div>
 
           <div style="margin-left:auto; display:flex;gap:8px">
-            <button class="btn warm" onclick="openAccModalFromStep3()">Editar accesorios</button>
+            <button class="btn warn" onclick="openAccModalFromStep3()">Editar accesorios</button>
           </div>
         </div>
 
@@ -919,7 +919,7 @@ function renderTanks(){
       </div>
       <div class="tank-actions">
         <button class="btn small ghost" onclick="editTank(${idx})">Editar</button>
-        <button class="btn warm" onclick="openAccModal(${n})">Accesorios</button>
+        <button class="btn warn" onclick="openAccModal(${n})">Accesorios</button>
         <button class="btn small danger" onclick="removeTank(${idx})">Eliminar</button>
       </div>`;
     list.appendChild(div);
@@ -1427,7 +1427,7 @@ function buildPhotoTable(){
     const status = count >= r.required ? 'OK' : (count === 0 ? (r.enabled ? 'Sin fotos' : 'No aplica') : `Parcial (${count})`);
     // disable attach if not enabled
     const attachBtn = r.enabled ? `<button class="btn small ghost" onclick="attachPhotosForKey('${r.key}', ${r.required}, ${JSON.stringify(r.tokens).replace(/"/g,'&quot;')})">Adjuntar</button>` : `<button class="btn small ghost disabled-btn" disabled>Adjuntar</button>`;
-    const previewBtn = (count>0) ? `<button class="btn warm" onclick="previewPhotosForKey('${r.key}', ${JSON.stringify(r.tokens).replace(/"/g,'&quot;')})">Previsualizar</button>` : `<button class="btn small disabled-btn" disabled>Previsualizar</button>`;
+    const previewBtn = (count>0) ? `<button class="btn warn" onclick="previewPhotosForKey('${r.key}', ${JSON.stringify(r.tokens).replace(/"/g,'&quot;')})">Previsualizar</button>` : `<button class="btn small disabled-btn" disabled>Previsualizar</button>`;
     const removeBtn = (count>0) ? `<button class="btn small danger" onclick="removePhotosForKey('${r.key}', ${JSON.stringify(r.tokens).replace(/"/g,'&quot;')})">Eliminar</button>` : `<button class="btn small danger disabled-btn" disabled>Eliminar</button>`;
 
     tr.innerHTML = `<td style="vertical-align:middle">${r.label}</td>
@@ -1699,5 +1699,6 @@ updateStatuses();
 </script>
 </body>
 </html>
+
 
 
